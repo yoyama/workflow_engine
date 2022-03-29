@@ -5,18 +5,15 @@ import io.github.yoyama.utils.OptionHelper
 
 
 trait DagOps {
-  type CellData
   type ID = Int
   type Id2Cell = Map[Int,DagCell]
   type LINK = Map[Int,Set[Int]]
-
-  def emptyCellData:CellData
 
   case class DagDuplicatedCellException(id:ID) extends RuntimeException
   case class DagCellNotFoundException(id:ID) extends RuntimeException
   case class CellState(state: Int = 0, createdAt: Instant = Instant.now())
 
-  case class DagCell(id: ID, state: CellState, data: CellData)
+  case class DagCell(id: ID, state: CellState)
 
   case class Dag(root: DagCell, terminal: DagCell, cells: Id2Cell, parents: LINK, children: LINK) {
     def getCell(id:ID):Option[DagCell] = cells.get(id)
@@ -34,8 +31,8 @@ trait DagOps {
     }
   }
 
-  def createCell(id:ID, data:CellData):DagCell = {
-    DagCell(id, CellState(), data)
+  def createCell(id:ID):DagCell = {
+    DagCell(id, CellState())
   }
 
   def createDag(root:DagCell, terminal:DagCell, firstCell:DagCell): Dag = {

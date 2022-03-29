@@ -7,20 +7,18 @@ import org.scalatest.matchers.should.Matchers
 class DagTest extends AnyFlatSpec with OptionValues
 {
   val dagops = new DagOps {
-    type CellData = String
-    override def emptyCellData: CellData = ""
   }
 
-  val root = dagops.createCell(0, "root")
-  val terminal = dagops.createCell(-1, "terminal")
-  val cell1 = dagops.DagCell(1, dagops.CellState(), "cell1")
+  val root = dagops.createCell(0)
+  val terminal = dagops.createCell(-1)
+  val cell1 = dagops.DagCell(1, dagops.CellState())
   val dag: dagops.Dag = dagops.createDag(root, terminal, cell1)
 
   "getCell" should "work" in {
   }
-  
+
   "addCell" should "work" in {
-    val cell2 = dagops.createCell(2,  "cell2")
+    val cell2 = dagops.createCell(2)
     val dag2 = dagops.addCell(dag, cell1.id, cell2, true).get
     assert(dag2.cells.get(2).value == cell2)
     assert(dag2.children.get(2).value.exists(i => i == terminal.id))
@@ -28,9 +26,9 @@ class DagTest extends AnyFlatSpec with OptionValues
   }
 
   "validate" should "work" in {
-    val cell2 = dagops.createCell(2,  "cell2")
+    val cell2 = dagops.createCell(2)
     val dag2 = dagops.addCell(dag, cell1.id, cell2, true)
-    val cell3 = dagops.createCell(3, "cell3")
+    val cell3 = dagops.createCell(3)
     val dag3 = dagops.addCell(dag2.get, cell1.id, cell3, true)
     val result1 = dagops.validate(dag3.get)
     println(result1)
