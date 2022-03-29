@@ -1,3 +1,5 @@
+import Dependencies._
+
 val scala3Version = "3.1.1"
 
 lazy val root = project
@@ -10,6 +12,7 @@ lazy val root = project
 
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % "2.7.0",
-      "org.scalameta" %% "munit" % "0.7.29" % Test
+      "org.apache.kafka" % "kafka-clients" % "3.1.0",
+      scalaTest % Test,
     )
   )

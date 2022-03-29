@@ -45,6 +45,8 @@ trait DagOps {
     Dag(root, terminal, cells, parents, children)
   }
 
+  def getCell(dag: Dag, id:ID): Try[DagCell] = dag.getCell(id).toTry(DagCellNotFoundException(id))
+
   def addCell(dag: Dag, parent: ID, cell: DagCell, terminalProc:Boolean = true): Try[Dag] = {
     for {
       newCells <- addCell(dag.cells, cell)
@@ -62,9 +64,20 @@ trait DagOps {
 
   def linkCells(dag:Dag, parent:ID, child:ID):Try[Dag] = {
     for {
-      c1 <- link(dag.children, parent, child)
-      p1 <- link(dag.parents, child, parent)
-    } yield dag.copy(children = c1, parents = p1)
+      c <- getCell(dag, child)
+      p <- getCell(dag, parent)
+      cl <- link(dag.children, parent, child)
+      pl <- link(dag.parents, child, parent)
+    } yield dag.copy(children = cl, parents = pl)
+  }
+
+  def unlinkCells(dag:Dag, parent:ID, child:ID):Try[Dag] = {
+    for {
+      c <- getCell(dag, child)
+      p <- getCell(dag, parent)
+      cl <- unlink(dag.children, parent, child)
+      pl <- unlink(dag.parents, child, parent)
+    } yield dag.copy(children = cl, parents = pl)
   }
 
   def validate(dag:Dag): Try[Dag] = {
