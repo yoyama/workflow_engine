@@ -20,6 +20,7 @@ lazy val root = project
       "org.apache.kafka" % "kafka-clients" % "3.1.0",
       "org.postgresql" % "postgresql" % "42.3.3",
       "org.scalikejdbc" %% "scalikejdbc" % "4.0.0",
+      "org.scalikejdbc" %% "scalikejdbc-test"   % "4.0.0"   % "test",
       "org.flywaydb" % "flyway-core" % "8.5.5",
       "org.scalikejdbc" %% "scalikejdbc-config" % "4.0.0",
       scalaTest % Test,
