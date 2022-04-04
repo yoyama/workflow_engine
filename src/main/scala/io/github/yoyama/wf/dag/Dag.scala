@@ -1,4 +1,5 @@
 package io.github.yoyama.wf.dag
+
 import java.time.Instant
 import scala.util.{Failure, Success, Try}
 import io.github.yoyama.utils.OptionHelper
@@ -10,9 +11,8 @@ trait DagOps {
 
   case class DagDuplicatedCellException(id:CellID) extends RuntimeException
   case class DagCellNotFoundException(id:CellID) extends RuntimeException
-  case class CellState(state: Int = 0, createdAt: Instant = Instant.now())
 
-  case class DagCell(id: CellID, state: CellState)
+  case class DagCell(id: CellID, state: Int, createdAt: Instant)
 
   case class Dag(root: DagCell, terminal: DagCell, cells: Id2Cell, parents: LINK, children: LINK) {
     def getCell(id:CellID):Option[DagCell] = cells.get(id)
@@ -31,7 +31,7 @@ trait DagOps {
   }
 
   def createCell(id:CellID):DagCell = {
-    DagCell(id, CellState())
+    DagCell(id, 0, Instant.now())
   }
 
   def createDag(root:DagCell, terminal:DagCell, firstCell:DagCell): Dag = {

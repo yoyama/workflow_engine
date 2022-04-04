@@ -1,5 +1,7 @@
 package io.github.yoyama.wf.dag
 
+import java.time.Instant
+
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
@@ -11,7 +13,7 @@ class DagTest extends AnyFlatSpec with OptionValues
 
   val root = dagops.createCell(0)
   val terminal = dagops.createCell(-1)
-  val cell1 = dagops.DagCell(1, dagops.CellState())
+  val cell1 = dagops.DagCell(1, 0, Instant.now())
   val dag: dagops.Dag = dagops.createDag(root, terminal, cell1)
 
   "getCell" should "work" in {
