@@ -3,35 +3,34 @@ import java.time.Instant
 import scala.util.{Failure, Success, Try}
 import io.github.yoyama.utils.OptionHelper
 
-
 trait DagOps {
-  type ID = Int
-  type Id2Cell = Map[Int,DagCell]
+  type CellID = Int
+  type Id2Cell = Map[CellID,DagCell]
   type LINK = Map[Int,Set[Int]]
 
-  case class DagDuplicatedCellException(id:ID) extends RuntimeException
-  case class DagCellNotFoundException(id:ID) extends RuntimeException
+  case class DagDuplicatedCellException(id:CellID) extends RuntimeException
+  case class DagCellNotFoundException(id:CellID) extends RuntimeException
   case class CellState(state: Int = 0, createdAt: Instant = Instant.now())
 
-  case class DagCell(id: ID, state: CellState)
+  case class DagCell(id: CellID, state: CellState)
 
   case class Dag(root: DagCell, terminal: DagCell, cells: Id2Cell, parents: LINK, children: LINK) {
-    def getCell(id:ID):Option[DagCell] = cells.get(id)
+    def getCell(id:CellID):Option[DagCell] = cells.get(id)
 
-    def getParents(id:ID):Set[DagCell] = {
+    def getParents(id:CellID):Set[DagCell] = {
       val p:Set[Int] = parents.getOrElse(id, Set.empty[Int])
       val p2:Set[DagCell] = p.map(i => cells.get(i).get) // assume Dag is validated
       p2
     }
 
-    def getChildren(id:ID):Set[DagCell] = {
+    def getChildren(id:CellID):Set[DagCell] = {
       val c:Set[Int] = children.getOrElse(id, Set.empty[Int])
       val c2:Set[DagCell] = c.map(i => cells.get(i).get) // assume Dag is validated
       c2
     }
   }
 
-  def createCell(id:ID):DagCell = {
+  def createCell(id:CellID):DagCell = {
     DagCell(id, CellState())
   }
 
@@ -42,9 +41,9 @@ trait DagOps {
     Dag(root, terminal, cells, parents, children)
   }
 
-  def getCell(dag: Dag, id:ID): Try[DagCell] = dag.getCell(id).toTry(DagCellNotFoundException(id))
+  def getCell(dag: Dag, id:CellID): Try[DagCell] = dag.getCell(id).toTry(DagCellNotFoundException(id))
 
-  def addCell(dag: Dag, parent: ID, cell: DagCell, terminalProc:Boolean = true): Try[Dag] = {
+  def addCell(dag: Dag, parent: CellID, cell: DagCell, terminalProc:Boolean = true): Try[Dag] = {
     for {
       newCells <- addCell(dag.cells, cell)
       parentCell <- dag.getCell(parent).toTry(DagCellNotFoundException(parent))
@@ -57,9 +56,9 @@ trait DagOps {
     } yield Dag(dag.root, dag.terminal, newCells, newParents, newChildren)
   }
 
-  def insertCell(dag:Dag, parent: ID, child: ID, cell: DagCell): Try[Dag] = ???
+  def insertCell(dag:Dag, parent: CellID, child: CellID, cell: DagCell): Try[Dag] = ???
 
-  def linkCells(dag:Dag, parent:ID, child:ID):Try[Dag] = {
+  def linkCells(dag:Dag, parent:CellID, child:CellID):Try[Dag] = {
     for {
       c <- getCell(dag, child)
       p <- getCell(dag, parent)
@@ -68,7 +67,7 @@ trait DagOps {
     } yield dag.copy(children = cl, parents = pl)
   }
 
-  def unlinkCells(dag:Dag, parent:ID, child:ID):Try[Dag] = {
+  def unlinkCells(dag:Dag, parent:CellID, child:CellID):Try[Dag] = {
     for {
       c <- getCell(dag, child)
       p <- getCell(dag, parent)
@@ -92,7 +91,7 @@ trait DagOps {
   private def sort(noinput:Seq[DagCell], sorted:Seq[DagCell], cells:Id2Cell, children:LINK, parents:LINK): Try[Seq[DagCell]] = {
     println(s"noinput:${noinput}, sorted:${sorted}, cells:${cells}")
     println("")
-    def getChildren(id:ID): Try[Set[DagCell]] = {
+    def getChildren(id:CellID): Try[Set[DagCell]] = {
       import cats.implicits._
 
       children.get(id) match {
@@ -104,7 +103,7 @@ trait DagOps {
       }
     }
     // Remove link between pid <-> cells from parents
-    def removeParents(pid:ID, cells:Set[DagCell]): Try[LINK] = {
+    def removeParents(pid:CellID, cells:Set[DagCell]): Try[LINK] = {
       //ToDo check existence
       val ret = cells.foldLeft(parents){ (acc, c) =>
         acc.get(c.id).map(x => acc.updated(c.id, x - pid)).getOrElse(acc)
@@ -113,7 +112,7 @@ trait DagOps {
     }
 
     // Remove link between id <-> its children
-    def removeChildren(id:ID): Try[LINK] = {
+    def removeChildren(id:CellID): Try[LINK] = {
       val ret = children.get(id) match {
         case None => children.updated(id, Set.empty)
         case Some(v) => children.updated(id, Set.empty)
@@ -121,7 +120,7 @@ trait DagOps {
       Success(ret)
     }
 
-    def remove[V](id:ID, cells:Map[Int, V]):Try[Map[Int, V]] = {
+    def remove[V](id:CellID, cells:Map[Int, V]):Try[Map[Int, V]] = {
       cells.get(id) match {
         case None => Failure(DagCellNotFoundException(id))
         case Some(_) => Success(cells.removed(id))
@@ -157,7 +156,7 @@ trait DagOps {
     }
   }
 
-  private def link(links:LINK, p:ID, c:ID): Try[LINK] = {
+  private def link(links:LINK, p:CellID, c:CellID): Try[LINK] = {
     val children = links.get(p)
     children.match {
       case Some(cl) => Success(links + (p -> (cl + c)))
@@ -165,7 +164,7 @@ trait DagOps {
     }
   }
 
-  private def unlink(links:LINK, p:ID, c:ID): Try[LINK] = {
+  private def unlink(links:LINK, p:CellID, c:CellID): Try[LINK] = {
     val children = links.get(p)
     children.match {
       case Some(cl) => {
