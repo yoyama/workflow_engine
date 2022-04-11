@@ -1,16 +1,20 @@
 package io.github.yoyama.wf.repository
 
-import scala.util.{Try,Success,Failure}
+import cats.Applicative
+
+import scala.util.{Failure, Success, Try}
 
 case class TransactionResult[A](v:Either[Throwable,A]) {}
 
 trait Transaction[A] { self =>
+  def pure[A](x:A): Transaction[A]
   def map[B](f: A => B): Transaction[B]
   def flatMap[B](f: A => Transaction[B]): Transaction[B]
   def run(implicit runner: TransactionRunner): TransactionResult[A] = {
     runner.run(self)
   }
 }
+
 
 trait TransactionRunner {
   def run[A](transaction: Transaction[A]): TransactionResult[A]
@@ -19,6 +23,9 @@ trait TransactionRunner {
 import scalikejdbc._
 
 case class ScalikeJDBCTransaction[A](execute: DBSession => Either[Throwable,A]) extends Transaction[A] {
+  override def pure[A](x: A): Transaction[A] = {
+    ScalikeJDBCTransaction.from(x)
+  }
 
   override def map[B](f: A => B): ScalikeJDBCTransaction[B] = {
     val exec = (session: DBSession) => execute(session).map(f)
@@ -33,6 +40,7 @@ case class ScalikeJDBCTransaction[A](execute: DBSession => Either[Throwable,A]) 
 }
 
 object ScalikeJDBCTransaction {
+  import cats.Applicative
   def from[A](execute: DBSession => A): ScalikeJDBCTransaction[A] = {
     val exec = (session: DBSession) => {
       Try {
@@ -43,6 +51,24 @@ object ScalikeJDBCTransaction {
       }
     }
     ScalikeJDBCTransaction(exec)
+  }
+
+  def from[A](a:A): ScalikeJDBCTransaction[A] = {
+    ScalikeJDBCTransaction.from{ (s) => a}
+  }
+
+  implicit val apl: Applicative[ScalikeJDBCTransaction] = new Applicative[ScalikeJDBCTransaction] {
+    override def pure[A](x: A): ScalikeJDBCTransaction[A] = {
+      ScalikeJDBCTransaction.from(x)
+    }
+
+    override def ap[A, B](ff: ScalikeJDBCTransaction[A => B])(fa: ScalikeJDBCTransaction[A]): ScalikeJDBCTransaction[B] = {
+      val ret = for {
+        a <- fa
+        f <- ff
+      } yield f(a)
+      ret.asInstanceOf[ScalikeJDBCTransaction[B]]
+    }
   }
 }
 

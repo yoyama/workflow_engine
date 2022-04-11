@@ -1,7 +1,7 @@
 package io.github.yoyama.wf.workflow
 
 import io.github.yoyama.wf.db.model.running.{LinkRun, TaskRun, WorkflowRun}
-import io.github.yoyama.wf.repository.{Transaction, TransactionResult, TransactionRunner, WorkflowRepository}
+import io.github.yoyama.wf.repository.{DatabaseWorkflowRepository, Transaction, TransactionResult, TransactionRunner, WorkflowRepository}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class WorkflowDagOpsTest extends AnyFlatSpec {
@@ -9,13 +9,7 @@ class WorkflowDagOpsTest extends AnyFlatSpec {
     override def run[A](transaction: Transaction[A]): TransactionResult[A] = ???
   }
 
-  val wfRepo = new WorkflowRepository {
-    override def getWorkflowRun(id: Int): Transaction[Option[WorkflowRun]] = ???
-
-    override def getTaskRun(wfid: Int): Transaction[Seq[TaskRun]] = ???
-
-    override def getLinkRun(wfid: Int): Transaction[Seq[LinkRun]] = ???
-  }
+  val wfRepo = new DatabaseWorkflowRepository
 
   val wfops = new WorkflowDagOps(wfRepo)
 
