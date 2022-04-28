@@ -1,15 +1,15 @@
 package io.github.yoyama.wf.workflow
 
-import io.github.yoyama.utils.OptionHelper
+import io.github.yoyama.utils.OptionHelper._
+import io.github.yoyama.wf.WfID
 import io.github.yoyama.wf.dag.DagOps
 import io.github.yoyama.wf.db.model.running.{LinkRun, TaskRun, WorkflowRun}
 import io.github.yoyama.wf.repository.{Transaction, TransactionResult, TransactionRunner, WorkflowRepository}
 
 import java.time.Instant
-import scala.util.{Try,Success}
+import scala.util.{Success, Try}
 
 class WorkflowDagOps(val wfRepo:WorkflowRepository)(implicit val tRunner:TransactionRunner) extends DagOps {
-  type WfID = Int
 
   // state: 0:wait 1:ready 5:provisioning 11:initializing 21:running 31:post processing 98:stopping 99:stop
   case class WorkflowTask(id:CellID, name: String, tType: String, config: String, state: Int = 0,

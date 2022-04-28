@@ -2,7 +2,7 @@ package io.github.yoyama.wf.dag
 
 import java.time.Instant
 import scala.util.{Failure, Success, Try}
-import io.github.yoyama.utils.OptionHelper
+import io.github.yoyama.utils.OptionHelper._
 
 trait DagOps {
   type CellID = Int
