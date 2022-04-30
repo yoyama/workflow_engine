@@ -8,7 +8,7 @@ case class TaskRun(
   wfid: Int,
   name: String,
   `type`: String,
-  config: Any,
+  config: String,
   state: Int,
   inputParams: Option[Any] = None,
   outputParams: Option[Any] = None,
@@ -44,7 +44,7 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
     wfid = rs.get(tr.wfid),
     name = rs.get(tr.name),
     `type` = rs.get(tr.`type`),
-    config = rs.any(tr.config),
+    config = rs.get(tr.config),
     state = rs.get(tr.state),
     inputParams = rs.anyOpt(tr.inputParams),
     outputParams = rs.anyOpt(tr.outputParams),
@@ -92,12 +92,19 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
       .map(_.long(1)).single.apply().get
   }
 
+  def create(t:TaskRun)(implicit session: DBSession): TaskRun =
+  {
+    create(t.id, t.wfid, t.name, t.`type`, t.config,
+      t.state, t.inputParams, t.outputParams, t.systemParams, t.stateParams, t.nextPoll,
+      t.result, t.errCode, t.startAt, t.finishAt, t.tag, t.createdAt, t.updatedAt)
+  }
+
   def create(
     id: Int,
     wfid: Int,
     name: String,
     `type`: String,
-    config: Any,
+    config: String,
     state: Int,
     inputParams: Option[Any] = None,
     outputParams: Option[Any] = None,
@@ -136,7 +143,7 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
         ${wfid},
         ${name},
         ${`type`},
-        ${config},
+        ${config}::jsonb,
         ${state},
         ${inputParams},
         ${outputParams},

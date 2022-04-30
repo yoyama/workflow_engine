@@ -72,6 +72,10 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
       .map(_.long(1)).single.apply().get
   }
 
+  def create(w:WorkflowRun)(implicit session: DBSession): WorkflowRun = {
+    create(w.id, w.name, w.state, w.startAt, w.finishAt, w.tag, w.createdAt, w.updatedAt)(session)
+  }
+  
   def create(
     id: Int,
     name: String,

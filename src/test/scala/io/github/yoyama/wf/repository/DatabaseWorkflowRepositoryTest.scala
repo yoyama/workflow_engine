@@ -1,7 +1,10 @@
 package io.github.yoyama.wf.repository
-import scalikejdbc._
-import scalikejdbc.config._
+import io.github.yoyama.wf.db.model.running.{WorkflowRunAll, WorkflowRun, TaskRun}
+import scalikejdbc.*
+import scalikejdbc.config.*
 import org.scalatest.flatspec.AnyFlatSpec
+
+import java.time.ZonedDateTime
 
 class DatabaseWorkflowRepositoryTest  extends AnyFlatSpec {
   Class.forName("org.postgresql.Driver")
@@ -10,7 +13,7 @@ class DatabaseWorkflowRepositoryTest  extends AnyFlatSpec {
   val jdbcUser = sys.env.getOrElse("TEST_JDBC_USER", "test")
   val jdbcPass = sys.env.getOrElse("TEST_JDBC_PASS", "testtest")
   ConnectionPool.singleton(jdbcUrl, jdbcUser, jdbcPass)
-  implicit val tnasactionRunner:TransactionRunner = new ScalikeJDBCTransactionRunner()
+  implicit val transactionRunner:TransactionRunner = new ScalikeJDBCTransactionRunner()
 
   "assignNewWfId" should "work" in {
     val repo = new DatabaseWorkflowRepository()
@@ -25,6 +28,22 @@ class DatabaseWorkflowRepositoryTest  extends AnyFlatSpec {
       assert(ret.v.isRight)
       ret.v.getOrElse(-1)
     }
+    println(id2)
     assert(id2-id1 >= 1)
+  }
+
+  "saveNewWorkflowRunAll" should "work" in {
+    val now = ZonedDateTime.now()
+    val repo = new DatabaseWorkflowRepository()
+
+    val wfa: WorkflowRunAll = WorkflowRunAll(
+      wf = WorkflowRun(id = 1, name = "test1", state = 0, createdAt = now, updatedAt = now),
+      tasks = Seq(
+        TaskRun(id = 2, wfid = 1, name = "t1", `type` ="aaaa", config = "{}", state = 0, createdAt = now, updatedAt = now)
+      ),
+      links = Seq()
+    )
+    val ret = repo.saveNewWorkflowRunAll(wfa).run
+    println(ret)
   }
 }

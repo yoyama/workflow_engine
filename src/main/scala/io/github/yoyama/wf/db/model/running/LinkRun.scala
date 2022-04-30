@@ -66,6 +66,10 @@ object LinkRun extends SQLSyntaxSupport[LinkRun] {
       .map(_.long(1)).single.apply().get
   }
 
+  def create(l:LinkRun)(implicit session: DBSession): LinkRun = {
+      create(l.id, l.wfid, l.parent, l.child, l.createdAt)(session)
+  }
+
   def create(
     id: Int,
     wfid: Int,

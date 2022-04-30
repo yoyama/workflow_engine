@@ -9,7 +9,6 @@ import scalikejdbc._
 import scalikejdbc.config._
 
 class DatabaseWorkflowRepository extends WorkflowRepository {
-
   def getWorkflowRun(id: Int): Transaction[Option[WorkflowRun]] = {
     ScalikeJDBCTransaction.from { (session: DBSession) =>
       WorkflowRun.find(id)(session)
@@ -35,16 +34,18 @@ class DatabaseWorkflowRepository extends WorkflowRepository {
     }
   }
 
-  // Save a workflow to all related tables. if wfId is None, assign new ID.
-  def saveNewWorkflowRunAll(wfa: WorkflowRunAll, wfid: Option[Int] = None): Transaction[WorkflowRunAll] = {
+  // Create a workflow to all related tables. if wfId is None, assign new ID.
+  def saveNewWorkflowRunAll(wfa: WorkflowRunAll, wfId: Option[Int] = None): Transaction[WorkflowRunAll] = {
     for {
-      id <- wfid.map(i => ScalikeJDBCTransaction.from(i)).getOrElse(assignNewWfId())
-      wf2 <- ScalikeJDBCTransaction.from(ss => wfa.wf.copy(id = id).save()(ss))
+      wfId2 <- wfId.map(i => ScalikeJDBCTransaction.from(i)).getOrElse(assignNewWfId())
+      wf2 <- ScalikeJDBCTransaction.from(ss => {
+        WorkflowRun.create(wfa.wf.copy(id = wfId2))(ss)
+      })
       tasks2 <- wfa.tasks
-        .map(t => ScalikeJDBCTransaction.from(ss => t.copy(wfid = id).save()(ss)))
+        .map(t => ScalikeJDBCTransaction.from(ss =>  TaskRun.create(t.copy(wfid = wfId2))(ss)))
         .toList.traverse(identity)
       links2 <- wfa.links
-        .map(t => ScalikeJDBCTransaction.from(ss => t.copy(wfid = id).save()(ss)))
+        .map(l => ScalikeJDBCTransaction.from(ss => LinkRun.create(l.copy(wfid = wfId2))(ss)))
         .toList.traverse(identity)
     } yield WorkflowRunAll(wf2, tasks2, links2)
   }
