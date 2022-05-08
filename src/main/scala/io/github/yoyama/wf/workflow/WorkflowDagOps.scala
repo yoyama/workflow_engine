@@ -34,14 +34,14 @@ class WorkflowDagOps(val wfRepo:WorkflowRepository)(implicit val tRunner:Transac
 
   // Create WorkflowDag by loading data in DB
   def loadWorkflow(wfid:WfID): Try[WorkflowDag] = {
-    val transaction: Transaction[(Option[WorkflowRun], Seq[TaskRun], Seq[LinkRun])] = for {
+    val transaction: Transaction[(WorkflowRun, Seq[TaskRun], Seq[LinkRun])] = for {
       wf <- wfRepo.getWorkflowRun(wfid)
       t <- wfRepo.getTaskRun(wfid)
       l <- wfRepo.getLinkRun(wfid)
     } yield (wf,t, l)
     for {
       tResult <-transaction.run.v.toTry
-      wfRun:WorkflowRun <- tResult._1.toTry(s"No workflow_run. id:${wfid}")
+      wfRun:WorkflowRun <- Success(tResult._1)
       wf <- createWorkflow(wfRun, tResult._2, tResult._3)
     } yield wf
   }

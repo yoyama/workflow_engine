@@ -2,16 +2,27 @@ package io.github.yoyama.wf.repository
 
 import io.github.yoyama.wf.db.model.running.{LinkRun, TaskRun, WorkflowRun}
 import io.github.yoyama.wf.db.model.running.WorkflowRunAll
-
-import cats._
-import cats.implicits._
-import scalikejdbc._
-import scalikejdbc.config._
+import cats.*
+import cats.implicits.*
+import io.github.yoyama.wf.db.model.running
+import scalikejdbc.*
+import scalikejdbc.config.*
 
 class DatabaseWorkflowRepository extends WorkflowRepository {
-  def getWorkflowRun(id: Int): Transaction[Option[WorkflowRun]] = {
+  def getWorkflowRunAll(wfid: Int): Transaction[WorkflowRunAll] = {
+    for {
+      w <- getWorkflowRun(wfid)
+      tasks <- getTaskRun(wfid)
+      links <- getLinkRun(wfid)
+    } yield WorkflowRunAll(w, tasks, links)
+  }
+
+  def getWorkflowRun(id: Int): Transaction[WorkflowRun] = {
     ScalikeJDBCTransaction.from { (session: DBSession) =>
-      WorkflowRun.find(id)(session)
+      WorkflowRun.find(id)(session) match {
+        case Some(w) => w
+        case None => throw new NoSuchElementException(id.toString)
+      }
     }
   }
 
@@ -52,6 +63,16 @@ class DatabaseWorkflowRepository extends WorkflowRepository {
 
   // Update a workflow to all related tables. Existing records are deleted then inserted.
   def updateWorkflowRunAll(wfa: WorkflowRunAll): Transaction[WorkflowRunAll] = {
-    ???
+    for {
+      wf2 <- ScalikeJDBCTransaction.from(ss => {
+        WorkflowRun.save(wfa.wf)(ss)
+      })
+      tasks2 <- wfa.tasks
+        .map(t => ScalikeJDBCTransaction.from(ss =>  TaskRun.create(t)(ss)))
+        .toList.traverse(identity)
+      links2 <- wfa.links
+        .map(l => ScalikeJDBCTransaction.from(ss => LinkRun.create(l)(ss)))
+        .toList.traverse(identity)
+    } yield WorkflowRunAll(wf2, tasks2, links2)
   }
 }
