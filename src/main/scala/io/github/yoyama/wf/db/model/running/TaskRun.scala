@@ -5,7 +5,7 @@ import java.time.{ZonedDateTime}
 
 case class TaskRun(
   id: Int,
-  wfid: Int,
+  runId: Int,
   name: String,
   `type`: String,
   config: String,
@@ -36,12 +36,12 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
 
   override val tableName = "task_run"
 
-  override val columns = Seq("id", "wfid", "name", "type", "config", "state", "input_params", "output_params", "system_params", "state_params", "next_poll", "result", "err_code", "start_at", "finish_at", "tag", "created_at", "updated_at")
+  override val columns = Seq("id", "run_id", "name", "type", "config", "state", "input_params", "output_params", "system_params", "state_params", "next_poll", "result", "err_code", "start_at", "finish_at", "tag", "created_at", "updated_at")
 
   def apply(tr: SyntaxProvider[TaskRun])(rs: WrappedResultSet): TaskRun = apply(tr.resultName)(rs)
   def apply(tr: ResultName[TaskRun])(rs: WrappedResultSet): TaskRun = new TaskRun(
     id = rs.get(tr.id),
-    wfid = rs.get(tr.wfid),
+    runId = rs.get(tr.runId),
     name = rs.get(tr.name),
     `type` = rs.get(tr.`type`),
     config = rs.get(tr.config),
@@ -64,8 +64,8 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
 
   override val autoSession = AutoSession
 
-  def find(id: Int, wfid: Int)(implicit session: DBSession): Option[TaskRun] = {
-    sql"""select ${tr.result.*} from ${TaskRun as tr} where ${tr.id} = ${id} and ${tr.wfid} = ${wfid}"""
+  def find(id: Int, runId: Int)(implicit session: DBSession): Option[TaskRun] = {
+    sql"""select ${tr.result.*} from ${TaskRun as tr} where ${tr.id} = ${id} and ${tr.runId} = ${runId}"""
       .map(TaskRun(tr.resultName)).single.apply()
   }
 
@@ -92,16 +92,16 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
       .map(_.long(1)).single.apply().get
   }
 
-  def create(t:TaskRun)(implicit session: DBSession): TaskRun =
-  {
-    create(t.id, t.wfid, t.name, t.`type`, t.config,
+  def create(t:TaskRun)(implicit session: DBSession): TaskRun = {
+    create(
+      t.id, t.runId, t.name, t.`type`, t.config,
       t.state, t.inputParams, t.outputParams, t.systemParams, t.stateParams, t.nextPoll,
       t.result, t.errCode, t.startAt, t.finishAt, t.tag, t.createdAt, t.updatedAt)
   }
 
   def create(
     id: Int,
-    wfid: Int,
+    runId: Int,
     name: String,
     `type`: String,
     config: String,
@@ -121,7 +121,7 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
     sql"""
       insert into ${TaskRun.table} (
         ${column.id},
-        ${column.wfid},
+        ${column.runId},
         ${column.name},
         ${column.`type`},
         ${column.config},
@@ -140,7 +140,7 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
         ${column.updatedAt}
       ) values (
         ${id},
-        ${wfid},
+        ${runId},
         ${name},
         ${`type`},
         ${config}::jsonb,
@@ -162,7 +162,7 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
 
     TaskRun(
       id = id,
-      wfid = wfid,
+      runId = runId,
       name = name,
       `type` = `type`,
       config = config,
@@ -185,7 +185,7 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
     val params: collection.Seq[Seq[(String, Any)]] = entities.map(entity =>
       Seq(
         "id" -> entity.id,
-        "wfid" -> entity.wfid,
+        "runId" -> entity.runId,
         "name" -> entity.name,
         "type" -> entity.`type`,
         "config" -> entity.config,
@@ -204,7 +204,7 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
         "updatedAt" -> entity.updatedAt))
     SQL("""insert into task_run(
       id,
-      wfid,
+      run_id,
       name,
       type,
       config,
@@ -223,7 +223,7 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
       updated_at
     ) values (
       {id},
-      {wfid},
+      {runId},
       {name},
       {type},
       {config},
@@ -249,7 +249,7 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
         ${TaskRun.table}
       set
         ${column.id} = ${entity.id},
-        ${column.wfid} = ${entity.wfid},
+        ${column.runId} = ${entity.runId},
         ${column.name} = ${entity.name},
         ${column.`type`} = ${entity.`type`},
         ${column.config} = ${entity.config},
@@ -267,13 +267,13 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
         ${column.createdAt} = ${entity.createdAt},
         ${column.updatedAt} = ${entity.updatedAt}
       where
-        ${column.id} = ${entity.id} and ${column.wfid} = ${entity.wfid}
+        ${column.id} = ${entity.id} and ${column.runId} = ${entity.runId}
       """.update.apply()
     entity
   }
 
   def destroy(entity: TaskRun)(implicit session: DBSession): Int = {
-    sql"""delete from ${TaskRun.table} where ${column.id} = ${entity.id} and ${column.wfid} = ${entity.wfid}""".update.apply()
+    sql"""delete from ${TaskRun.table} where ${column.id} = ${entity.id} and ${column.runId} = ${entity.runId}""".update.apply()
   }
 
 }

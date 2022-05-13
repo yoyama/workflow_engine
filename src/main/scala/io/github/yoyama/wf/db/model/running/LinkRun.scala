@@ -4,8 +4,7 @@ import scalikejdbc._
 import java.time.{ZonedDateTime}
 
 case class LinkRun(
-  id: Int,
-  wfid: Int,
+  runId: Int,
   parent: Int,
   child: Int,
   createdAt: ZonedDateTime) {
@@ -23,12 +22,11 @@ object LinkRun extends SQLSyntaxSupport[LinkRun] {
 
   override val tableName = "link_run"
 
-  override val columns = Seq("id", "wfid", "parent", "child", "created_at")
+  override val columns = Seq("run_id", "parent", "child", "created_at")
 
   def apply(lr: SyntaxProvider[LinkRun])(rs: WrappedResultSet): LinkRun = apply(lr.resultName)(rs)
   def apply(lr: ResultName[LinkRun])(rs: WrappedResultSet): LinkRun = new LinkRun(
-    id = rs.get(lr.id),
-    wfid = rs.get(lr.wfid),
+    runId = rs.get(lr.runId),
     parent = rs.get(lr.parent),
     child = rs.get(lr.child),
     createdAt = rs.get(lr.createdAt)
@@ -38,8 +36,8 @@ object LinkRun extends SQLSyntaxSupport[LinkRun] {
 
   override val autoSession = AutoSession
 
-  def find(id: Int)(implicit session: DBSession): Option[LinkRun] = {
-    sql"""select ${lr.result.*} from ${LinkRun as lr} where ${lr.id} = ${id}"""
+  def find(runId: Int, parent: Int, child: Int)(implicit session: DBSession): Option[LinkRun] = {
+    sql"""select ${lr.result.*} from ${LinkRun as lr} where ${lr.runId} = ${runId} and ${lr.parent} = ${parent} and ${lr.child} = ${child}"""
       .map(LinkRun(lr.resultName)).single.apply()
   }
 
@@ -67,25 +65,22 @@ object LinkRun extends SQLSyntaxSupport[LinkRun] {
   }
 
   def create(l:LinkRun)(implicit session: DBSession): LinkRun = {
-      create(l.id, l.wfid, l.parent, l.child, l.createdAt)(session)
+    create(l.runId, l.parent, l.child, l.createdAt)(session)
   }
 
   def create(
-    id: Int,
-    wfid: Int,
+    runId: Int,
     parent: Int,
     child: Int,
     createdAt: ZonedDateTime)(implicit session: DBSession): LinkRun = {
     sql"""
       insert into ${LinkRun.table} (
-        ${column.id},
-        ${column.wfid},
+        ${column.runId},
         ${column.parent},
         ${column.child},
         ${column.createdAt}
       ) values (
-        ${id},
-        ${wfid},
+        ${runId},
         ${parent},
         ${child},
         ${createdAt}
@@ -93,8 +88,7 @@ object LinkRun extends SQLSyntaxSupport[LinkRun] {
       """.update.apply()
 
     LinkRun(
-      id = id,
-      wfid = wfid,
+      runId = runId,
       parent = parent,
       child = child,
       createdAt = createdAt)
@@ -103,20 +97,17 @@ object LinkRun extends SQLSyntaxSupport[LinkRun] {
   def batchInsert(entities: collection.Seq[LinkRun])(implicit session: DBSession): List[Int] = {
     val params: collection.Seq[Seq[(String, Any)]] = entities.map(entity =>
       Seq(
-        "id" -> entity.id,
-        "wfid" -> entity.wfid,
+        "runId" -> entity.runId,
         "parent" -> entity.parent,
         "child" -> entity.child,
         "createdAt" -> entity.createdAt))
     SQL("""insert into link_run(
-      id,
-      wfid,
+      run_id,
       parent,
       child,
       created_at
     ) values (
-      {id},
-      {wfid},
+      {runId},
       {parent},
       {child},
       {createdAt}
@@ -128,19 +119,18 @@ object LinkRun extends SQLSyntaxSupport[LinkRun] {
       update
         ${LinkRun.table}
       set
-        ${column.id} = ${entity.id},
-        ${column.wfid} = ${entity.wfid},
+        ${column.runId} = ${entity.runId},
         ${column.parent} = ${entity.parent},
         ${column.child} = ${entity.child},
         ${column.createdAt} = ${entity.createdAt}
       where
-        ${column.id} = ${entity.id}
+        ${column.runId} = ${entity.runId} and ${column.parent} = ${entity.parent} and ${column.child} = ${entity.child}
       """.update.apply()
     entity
   }
 
   def destroy(entity: LinkRun)(implicit session: DBSession): Int = {
-    sql"""delete from ${LinkRun.table} where ${column.id} = ${entity.id}""".update.apply()
+    sql"""delete from ${LinkRun.table} where ${column.runId} = ${entity.runId} and ${column.parent} = ${entity.parent} and ${column.child} = ${entity.child}""".update.apply()
   }
 
 }

@@ -9,11 +9,11 @@ import scalikejdbc.*
 import scalikejdbc.config.*
 
 class DatabaseWorkflowRepository extends WorkflowRepository {
-  def getWorkflowRunAll(wfid: Int): Transaction[WorkflowRunAll] = {
+  def getWorkflowRunAll(runId: Int): Transaction[WorkflowRunAll] = {
     for {
-      w <- getWorkflowRun(wfid)
-      tasks <- getTaskRun(wfid)
-      links <- getLinkRun(wfid)
+      w <- getWorkflowRun(runId)
+      tasks <- getTaskRun(runId)
+      links <- getLinkRun(runId)
     } yield WorkflowRunAll(w, tasks, links)
   }
 
@@ -26,37 +26,37 @@ class DatabaseWorkflowRepository extends WorkflowRepository {
     }
   }
 
-  def getTaskRun(wfid: Int): Transaction[Seq[TaskRun]] = {
+  def getTaskRun(runId: Int): Transaction[Seq[TaskRun]] = {
     ScalikeJDBCTransaction.from { (session: DBSession) =>
-      TaskRun.findAllBy(sqls"wfid = ${wfid}")(session)
+      TaskRun.findAllBy(sqls"run_id = ${runId}")(session)
     }
   }
 
-  def getLinkRun(wfid: Int): Transaction[Seq[LinkRun]] = {
+  def getLinkRun(run_id: Int): Transaction[Seq[LinkRun]] = {
     ScalikeJDBCTransaction.from { (session: DBSession) =>
-      LinkRun.findAllBy(sqls"wfid = ${wfid}")(session)
+      LinkRun.findAllBy(sqls"run_id = ${run_id}")(session)
     }
   }
 
-  def assignNewWfId(): Transaction[Int] = {
+  def assignNewRunId(): Transaction[Int] = {
     ScalikeJDBCTransaction.from { (session: DBSession) =>
       implicit val s = session
-      sql"""select nextval('running.workflow_id')""".map(rs => rs.int("nextval")).single.apply().get
+      sql"""select nextval('running.run_id')""".map(rs => rs.int("nextval")).single.apply().get
     }
   }
 
-  // Create a workflow to all related tables. if wfId is None, assign new ID.
-  def saveNewWorkflowRunAll(wfa: WorkflowRunAll, wfId: Option[Int] = None): Transaction[WorkflowRunAll] = {
+  // Create a workflow to all related tables. if runId is None, assign new ID.
+  def saveNewWorkflowRunAll(wfa: WorkflowRunAll, runId: Option[Int] = None): Transaction[WorkflowRunAll] = {
     for {
-      wfId2 <- wfId.map(i => ScalikeJDBCTransaction.from(i)).getOrElse(assignNewWfId())
+      runId2 <- runId.map(i => ScalikeJDBCTransaction.from(i)).getOrElse(assignNewRunId())
       wf2 <- ScalikeJDBCTransaction.from(ss => {
-        WorkflowRun.create(wfa.wf.copy(id = wfId2))(ss)
+        WorkflowRun.create(wfa.wf.copy(runId = runId2))(ss)
       })
       tasks2 <- wfa.tasks
-        .map(t => ScalikeJDBCTransaction.from(ss =>  TaskRun.create(t.copy(wfid = wfId2))(ss)))
+        .map(t => ScalikeJDBCTransaction.from(ss =>  TaskRun.create(t.copy(runId = runId2))(ss)))
         .toList.traverse(identity)
       links2 <- wfa.links
-        .map(l => ScalikeJDBCTransaction.from(ss => LinkRun.create(l.copy(wfid = wfId2))(ss)))
+        .map(l => ScalikeJDBCTransaction.from(ss => LinkRun.create(l.copy(runId = runId2))(ss)))
         .toList.traverse(identity)
     } yield WorkflowRunAll(wf2, tasks2, links2)
   }
@@ -67,6 +67,8 @@ class DatabaseWorkflowRepository extends WorkflowRepository {
       wf2 <- ScalikeJDBCTransaction.from(ss => {
         WorkflowRun.save(wfa.wf)(ss)
       })
+      delLinks <- deleteLinkRun(wf2.runId)
+      delTasks <- deleteTaskRun(wf2.runId)
       tasks2 <- wfa.tasks
         .map(t => ScalikeJDBCTransaction.from(ss =>  TaskRun.create(t)(ss)))
         .toList.traverse(identity)
@@ -74,5 +76,19 @@ class DatabaseWorkflowRepository extends WorkflowRepository {
         .map(l => ScalikeJDBCTransaction.from(ss => LinkRun.create(l)(ss)))
         .toList.traverse(identity)
     } yield WorkflowRunAll(wf2, tasks2, links2)
+  }
+
+  def deleteLinkRun(runId:Int):Transaction[Int] = {
+    ScalikeJDBCTransaction.from { (session: DBSession) =>
+      implicit val s = session
+      sql"""delete from running.link_run where run_id = ${runId}""".update.apply()
+    }
+  }
+
+  def deleteTaskRun(runId:Int):Transaction[Int] = {
+    ScalikeJDBCTransaction.from { (session: DBSession) =>
+      implicit val s = session
+      sql"""delete from running.task_run where run_id = ${runId}""".update.apply()
+    }
   }
 }

@@ -70,7 +70,7 @@ class WorkflowDagOps(val wfRepo:WorkflowRepository)(implicit val tRunner:Transac
     for {
       tasks: Seq[WorkflowTask] <- tasksR.toList.traverse(convTask)
       links: Seq[(CellID,CellID)] <- convLink(linksR)
-      wf <- createWorkflow(wfR.id, tasks, links)
+      wf <- createWorkflow(wfR.runId, tasks, links)
     } yield wf
   }
 

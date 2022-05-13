@@ -11,12 +11,15 @@ trait WorkflowRepository() {
   def getTaskRun(wfid:Int):Transaction[Seq[TaskRun]]
   def getLinkRun(wfid:Int):Transaction[Seq[LinkRun]]
 
-  def assignNewWfId():Transaction[Int]
+  def assignNewRunId():Transaction[Int]
   // Save a workflow to all related tables. if wfid is None, assign new id.
   def saveNewWorkflowRunAll(wfa:WorkflowRunAll, wfid:Option[Int] = None):Transaction[WorkflowRunAll]
 
   // Update a workflow to all related tables. Existing records are deleted then inserted.
   def updateWorkflowRunAll(wfa: WorkflowRunAll):Transaction[WorkflowRunAll]
+  
+  def deleteLinkRun(wfid:Int):Transaction[Int]
+  def deleteTaskRun(wfid:Int):Transaction[Int]
 }
 
 

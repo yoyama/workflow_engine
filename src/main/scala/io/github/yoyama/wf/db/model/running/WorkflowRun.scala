@@ -4,7 +4,7 @@ import scalikejdbc._
 import java.time.{ZonedDateTime}
 
 case class WorkflowRun(
-  id: Int,
+  runId: Int,
   name: String,
   state: Int,
   startAt: Option[ZonedDateTime] = None,
@@ -26,11 +26,11 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
 
   override val tableName = "workflow_run"
 
-  override val columns = Seq("id", "name", "state", "start_at", "finish_at", "tag", "created_at", "updated_at")
+  override val columns = Seq("run_id", "name", "state", "start_at", "finish_at", "tag", "created_at", "updated_at")
 
   def apply(wr: SyntaxProvider[WorkflowRun])(rs: WrappedResultSet): WorkflowRun = apply(wr.resultName)(rs)
   def apply(wr: ResultName[WorkflowRun])(rs: WrappedResultSet): WorkflowRun = new WorkflowRun(
-    id = rs.get(wr.id),
+    runId = rs.get(wr.runId),
     name = rs.get(wr.name),
     state = rs.get(wr.state),
     startAt = rs.get(wr.startAt),
@@ -44,8 +44,8 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
 
   override val autoSession = AutoSession
 
-  def find(id: Int)(implicit session: DBSession): Option[WorkflowRun] = {
-    sql"""select ${wr.result.*} from ${WorkflowRun as wr} where ${wr.id} = ${id}"""
+  def find(runId: Int)(implicit session: DBSession): Option[WorkflowRun] = {
+    sql"""select ${wr.result.*} from ${WorkflowRun as wr} where ${wr.runId} = ${runId}"""
       .map(WorkflowRun(wr.resultName)).single.apply()
   }
 
@@ -73,11 +73,11 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
   }
 
   def create(w:WorkflowRun)(implicit session: DBSession): WorkflowRun = {
-    create(w.id, w.name, w.state, w.startAt, w.finishAt, w.tag, w.createdAt, w.updatedAt)(session)
+    create(w.runId, w.name, w.state, w.startAt, w.finishAt, w.tag, w.createdAt, w.updatedAt)(session)
   }
-  
+
   def create(
-    id: Int,
+    runId: Int,
     name: String,
     state: Int,
     startAt: Option[ZonedDateTime] = None,
@@ -87,7 +87,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
     updatedAt: ZonedDateTime)(implicit session: DBSession): WorkflowRun = {
     sql"""
       insert into ${WorkflowRun.table} (
-        ${column.id},
+        ${column.runId},
         ${column.name},
         ${column.state},
         ${column.startAt},
@@ -96,7 +96,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
         ${column.createdAt},
         ${column.updatedAt}
       ) values (
-        ${id},
+        ${runId},
         ${name},
         ${state},
         ${startAt},
@@ -108,7 +108,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
       """.update.apply()
 
     WorkflowRun(
-      id = id,
+      runId = runId,
       name = name,
       state = state,
       startAt = startAt,
@@ -121,7 +121,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
   def batchInsert(entities: collection.Seq[WorkflowRun])(implicit session: DBSession): List[Int] = {
     val params: collection.Seq[Seq[(String, Any)]] = entities.map(entity =>
       Seq(
-        "id" -> entity.id,
+        "runId" -> entity.runId,
         "name" -> entity.name,
         "state" -> entity.state,
         "startAt" -> entity.startAt,
@@ -130,7 +130,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
         "createdAt" -> entity.createdAt,
         "updatedAt" -> entity.updatedAt))
     SQL("""insert into workflow_run(
-      id,
+      run_id,
       name,
       state,
       start_at,
@@ -139,7 +139,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
       created_at,
       updated_at
     ) values (
-      {id},
+      {runId},
       {name},
       {state},
       {startAt},
@@ -155,7 +155,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
       update
         ${WorkflowRun.table}
       set
-        ${column.id} = ${entity.id},
+        ${column.runId} = ${entity.runId},
         ${column.name} = ${entity.name},
         ${column.state} = ${entity.state},
         ${column.startAt} = ${entity.startAt},
@@ -164,13 +164,13 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
         ${column.createdAt} = ${entity.createdAt},
         ${column.updatedAt} = ${entity.updatedAt}
       where
-        ${column.id} = ${entity.id}
+        ${column.runId} = ${entity.runId}
       """.update.apply()
     entity
   }
 
   def destroy(entity: WorkflowRun)(implicit session: DBSession): Int = {
-    sql"""delete from ${WorkflowRun.table} where ${column.id} = ${entity.id}""".update.apply()
+    sql"""delete from ${WorkflowRun.table} where ${column.runId} = ${entity.runId}""".update.apply()
   }
 
 }

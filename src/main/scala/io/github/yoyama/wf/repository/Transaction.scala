@@ -77,6 +77,15 @@ class ScalikeJDBCTransactionRunner extends TransactionRunner {
     TransactionResult {
       DB localTx { session =>
         transaction.asInstanceOf[ScalikeJDBCTransaction[A]].execute(session)
+      } match {
+        case v if (v.isRight) => v
+        case v => {
+          v match {
+            case Left(l) => l.printStackTrace()
+            case Right(r) =>
+          }
+          v
+        }
       }
     }
   }

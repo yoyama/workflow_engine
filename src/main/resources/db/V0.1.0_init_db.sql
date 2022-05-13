@@ -1,9 +1,9 @@
-create schema definition;
+-- create schema definition;
 
 create schema running;
 
 create table running.workflow_run(
-    id int,
+    run_id int,
     name varchar not null,
     state int not null,
     start_at timestamp,
@@ -11,12 +11,12 @@ create table running.workflow_run(
     tag jsonb,
     created_at timestamp not null,
     updated_at timestamp not null,
-    primary key(id)
+    primary key(run_id)
 );
 
 create table running.task_run(
     id int,
-    wfid int not null,
+    run_id int not null,
     name varchar not null,
     type varchar not null,
     config jsonb not null, -- task definition
@@ -33,21 +33,19 @@ create table running.task_run(
     tag jsonb,
     created_at timestamp not null,
     updated_at timestamp not null,
-    primary key(id, wfid),
-    FOREIGN KEY(wfid) references running.workflow_run(id)
+    primary key(id, run_id),
+    FOREIGN KEY(run_id) references running.workflow_run(run_id)
 );
 
 create table running.link_run(
-    id int,
-    wfid int not null,
+    run_id int not null,
     parent int not null,
     child int not null,
     created_at timestamp not null,
-    primary key(id),
-    FOREIGN KEY(wfid) references running.workflow_run(id),
-    FOREIGN KEY(parent, wfid) references running.task_run(id, wfid),
-    FOREIGN KEY(child, wfid) references running.task_run(id, wfid)
+    primary key(run_id, parent, child),
+    FOREIGN KEY(run_id) references running.workflow_run(run_id),
+    FOREIGN KEY(parent, run_id) references running.task_run(id, run_id),
+    FOREIGN KEY(child, run_id) references running.task_run(id, run_id)
 );
-create sequence running.workflow_id;
-create sequence running.task_id;
-create sequence running.link_id;
+
+create sequence running.run_id;
