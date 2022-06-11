@@ -65,10 +65,17 @@ class DatabaseWorkflowRepositoryTest  extends AnyFlatSpec {
     )
     val ret = repo.saveNewWorkflowRunAll(wfa).run
     val wfa1 = ret.v.getOrElse(fail("Failed to insert"))
-    val wfa2 = wfa1.copy(tasks = wfa1.tasks.map(_.copy(state = 999)))
+    val wfa2 = wfa1.copy(wf = wfa1.wf.copy(name = "test1-modified"), tasks = wfa1.tasks.map(_.copy(state = 999)))
     println("wfa2:" + wfa2);
     val ret2 = repo.updateWorkflowRunAll(wfa2).run
     println("ret2:" + ret2)
-    assert(ret2.v.isRight)
+    val ret3 = ret2.v.flatMap{ a =>
+      repo.getWorkflowRunAll(a.wf.runId).run.v
+    }.map { b =>
+      assert(b.wf.name == "test1-modified")
+      assert(b.tasks.head.state == 999)
+      b
+    }
+    assert(ret3.isRight)
   }
 }
