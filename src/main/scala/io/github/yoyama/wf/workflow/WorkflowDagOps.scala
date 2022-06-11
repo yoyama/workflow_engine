@@ -9,28 +9,30 @@ import io.github.yoyama.wf.repository.{Transaction, TransactionResult, Transacti
 import java.time.Instant
 import scala.util.{Success, Try}
 
-class WorkflowDagOps(val wfRepo:WorkflowRepository)(implicit val tRunner:TransactionRunner) extends DagOps {
+// A task of Dag for workflow
+// state: 0:wait 1:ready 5:provisioning 11:initializing 21:running 31:post processing 98:stopping 99:stop
+case class WorkflowTask(id:CellID, name: String, tType: String, config: String, state: Int = 0,
+                        result: Option[Int] = None, errorCode: Option[Int] = None,
+                        startAt: Option[Instant] = None, finishAt: Option[Instant] = None, tags:Map[String,String] = Map.empty)
+// A dag for workflow
+case class WorkflowDag(id:WfID, dag:Dag, tasks:Map[CellID,WorkflowTask], tags:Map[String,String]) {
+  def getTask(id:CellID):Option[WorkflowTask] = tasks.get(id)
+  def getParents(id:CellID):Seq[CellID] = dag.parents.get(id).map(_.toSeq).getOrElse(Seq.empty)
+  def getChildren(id:CellID):Seq[CellID] = dag.children.get(id).map(_.toSeq).getOrElse(Seq.empty)
 
-  // state: 0:wait 1:ready 5:provisioning 11:initializing 21:running 31:post processing 98:stopping 99:stop
-  case class WorkflowTask(id:CellID, name: String, tType: String, config: String, state: Int = 0,
-                          result: Option[Int] = None, errorCode: Option[Int] = None,
-                          startAt: Option[Instant] = None, finishAt: Option[Instant] = None, tags:Map[String,String] = Map.empty)
-
-  case class WorkflowDag(id:WfID, dag:Dag, tasks:Map[CellID,WorkflowTask], tags:Map[String,String]) {
-    def getTask(id:CellID):Option[WorkflowTask] = tasks.get(id)
-    def getParents(id:CellID):Seq[CellID] = dag.parents.get(id).map(_.toSeq).getOrElse(Seq.empty)
-    def getChildren(id:CellID):Seq[CellID] = dag.children.get(id).map(_.toSeq).getOrElse(Seq.empty)
-
-    def printInfo: String = {
-      val sb = new StringBuilder()
-      sb.append(s"Workflow ID: ${id}  ")
-      sb.append(s"root: id ${dag.root.id}  ")
-      sb.append(s"terminal: id ${dag.terminal.id}\n")
-      sb.append(s"tasks: ")
-      sb.append(tasks.toSeq.sortBy(x => x._1).map(x => s"${x._2.id} ${x._2.name}").mkString(","))
-      sb.toString()
-    }
+  def printInfo: String = {
+    val sb = new StringBuilder()
+    sb.append(s"Workflow ID: ${id}  ")
+    sb.append(s"root: id ${dag.root.id}  ")
+    sb.append(s"terminal: id ${dag.terminal.id}\n")
+    sb.append(s"tasks: ")
+    sb.append(tasks.toSeq.sortBy(x => x._1).map(x => s"${x._2.id} ${x._2.name}").mkString(","))
+    sb.toString()
   }
+}
+
+
+class WorkflowDagOps(val wfRepo:WorkflowRepository)(implicit val tRunner:TransactionRunner) extends DagOps {
 
   // Create WorkflowDag by loading data in DB
   def loadWorkflow(wfid:WfID): Try[WorkflowDag] = {

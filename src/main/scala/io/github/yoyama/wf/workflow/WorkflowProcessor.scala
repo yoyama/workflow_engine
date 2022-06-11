@@ -4,7 +4,7 @@ import io.github.yoyama.wf.messaging.{Queue, TaskQueue, WorkflowQueue}
 import io.github.yoyama.wf.workflow.WorkflowDagOps
 
 class WorkflowProcessor(val dagops: WorkflowDagOps, val tQueue:TaskQueue, val wfQueue:WorkflowQueue) {
-  type WfDag = dagops.WorkflowDag
+  type WfDag = WorkflowDag
   def receiveLoop():Unit = {
     // Fetch message
     // Load WfDag

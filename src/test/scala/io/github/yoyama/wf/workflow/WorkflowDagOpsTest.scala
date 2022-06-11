@@ -15,9 +15,9 @@ class WorkflowDagOpsTest extends AnyFlatSpec {
 
   "createWorkflow 1" should "work" in {
     val tasks = Seq(
-      wfops.WorkflowTask(0, "root", "nop", "{}"),
-      wfops.WorkflowTask(-1, "terminal", "nop", "{}"),
-      wfops.WorkflowTask(1, "task1", "nop", "{}"),
+      WorkflowTask(0, "root", "nop", "{}"),
+      WorkflowTask(-1, "terminal", "nop", "{}"),
+      WorkflowTask(1, "task1", "nop", "{}"),
     )
     val links = Seq((0,1),(1,-1))
 
