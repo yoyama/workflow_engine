@@ -13,8 +13,8 @@ class DagTest extends AnyFlatSpec with OptionValues
 
   val root = dagops.createCell(0)
   val terminal = dagops.createCell(-1)
-  val cell1 = dagops.DagCell(1, 0, Instant.now())
-  val dag: dagops.Dag = dagops.createDag(root, terminal, cell1)
+  val cell1 = DagCell(1, 0, Instant.now())
+  val dag: Dag = dagops.createDag(root, terminal, cell1)
 
   "getCell" should "work" in {
   }

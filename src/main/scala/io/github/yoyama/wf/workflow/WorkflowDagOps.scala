@@ -2,7 +2,7 @@ package io.github.yoyama.wf.workflow
 
 import io.github.yoyama.utils.OptionHelper._
 import io.github.yoyama.wf.WfID
-import io.github.yoyama.wf.dag.DagOps
+import io.github.yoyama.wf.dag.{CellID,Link,Id2Cell,Dag,DagOps,DagCell}
 import io.github.yoyama.wf.db.model.running.{LinkRun, TaskRun, WorkflowRun}
 import io.github.yoyama.wf.repository.{Transaction, TransactionResult, TransactionRunner, WorkflowRepository}
 
@@ -75,15 +75,15 @@ class WorkflowDagOps(val wfRepo:WorkflowRepository)(implicit val tRunner:Transac
   }
 
   def createWorkflow(id:WfID, wfTasks:Seq[WorkflowTask], pairs:Seq[(CellID,CellID)], tags:Map[String,String] = Map.empty):Try[WorkflowDag] = {
-    def convLink(pairs:Seq[(CellID,CellID)]):Try[(LINK,LINK)] = {
+    def convLink(pairs:Seq[(CellID,CellID)]):Try[(Link,Link)] = {
       val ret = pairs.foldLeft((Map.empty[Int,Set[Int]], Map.empty[Int,Set[Int]])) { (acc, c) =>
-        val (pLink:LINK, cLink:LINK) = acc
+        val (pLink:Link, cLink:Link) = acc
         val (pid:CellID, cid:CellID) = c
-        val newPLink: LINK = pLink.get(cid) match {
+        val newPLink: Link = pLink.get(cid) match {
           case Some(values) => pLink.updated(cid, values + pid )
           case None => pLink.updated(cid, Set(pid))
         }
-        val newCLink: LINK = cLink.get(pid) match {
+        val newCLink: Link = cLink.get(pid) match {
           case Some(values) => cLink.updated(pid, values + cid )
           case None => cLink.updated(pid, Set(cid))
         }

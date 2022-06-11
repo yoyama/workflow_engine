@@ -2,11 +2,11 @@ package io.github.yoyama.wf.repository
 
 import io.github.yoyama.wf.db.model.running.{LinkRun, TaskRun, WorkflowRun}
 import io.github.yoyama.wf.db.model.running.WorkflowRunAll
-import cats.*
-import cats.implicits.*
+import cats._
+import cats.implicits._
 import io.github.yoyama.wf.db.model.running
-import scalikejdbc.*
-import scalikejdbc.config.*
+import scalikejdbc._
+import scalikejdbc.config._
 
 class DatabaseWorkflowRepository extends WorkflowRepository {
   def getWorkflowRunAll(runId: Int): Transaction[WorkflowRunAll] = {
