@@ -10,16 +10,16 @@ case class TaskRun(
   `type`: String,
   config: String,
   state: Int,
-  inputParams: Option[Any] = None,
-  outputParams: Option[Any] = None,
-  systemParams: Option[Any] = None,
-  stateParams: Option[Any] = None,
+  inputParams: Option[String] = None,
+  outputParams: Option[String] = None,
+  systemParams: Option[String] = None,
+  stateParams: Option[String] = None,
   nextPoll: Option[ZonedDateTime] = None,
   result: Option[Int] = None,
   errCode: Option[Int] = None,
   startAt: Option[ZonedDateTime] = None,
   finishAt: Option[ZonedDateTime] = None,
-  tag: Option[Any] = None,
+  tag: Option[String] = None,
   createdAt: ZonedDateTime,
   updatedAt: ZonedDateTime) {
 
@@ -46,16 +46,16 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
     `type` = rs.get(tr.`type`),
     config = rs.get(tr.config),
     state = rs.get(tr.state),
-    inputParams = rs.anyOpt(tr.inputParams),
-    outputParams = rs.anyOpt(tr.outputParams),
-    systemParams = rs.anyOpt(tr.systemParams),
-    stateParams = rs.anyOpt(tr.stateParams),
+    inputParams = rs.stringOpt(tr.inputParams),
+    outputParams = rs.stringOpt(tr.outputParams),
+    systemParams = rs.stringOpt(tr.systemParams),
+    stateParams = rs.stringOpt(tr.stateParams),
     nextPoll = rs.get(tr.nextPoll),
     result = rs.get(tr.result),
     errCode = rs.get(tr.errCode),
     startAt = rs.get(tr.startAt),
     finishAt = rs.get(tr.finishAt),
-    tag = rs.anyOpt(tr.tag),
+    tag = rs.stringOpt(tr.tag),
     createdAt = rs.get(tr.createdAt),
     updatedAt = rs.get(tr.updatedAt)
   )
@@ -106,16 +106,16 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
     `type`: String,
     config: String,
     state: Int,
-    inputParams: Option[Any] = None,
-    outputParams: Option[Any] = None,
-    systemParams: Option[Any] = None,
-    stateParams: Option[Any] = None,
+    inputParams: Option[String] = None,
+    outputParams: Option[String] = None,
+    systemParams: Option[String] = None,
+    stateParams: Option[String] = None,
     nextPoll: Option[ZonedDateTime] = None,
     result: Option[Int] = None,
     errCode: Option[Int] = None,
     startAt: Option[ZonedDateTime] = None,
     finishAt: Option[ZonedDateTime] = None,
-    tag: Option[Any] = None,
+    tag: Option[String] = None,
     createdAt: ZonedDateTime,
     updatedAt: ZonedDateTime)(implicit session: DBSession): TaskRun = {
     sql"""
@@ -275,5 +275,4 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
   def destroy(entity: TaskRun)(implicit session: DBSession): Int = {
     sql"""delete from ${TaskRun.table} where ${column.id} = ${entity.id} and ${column.runId} = ${entity.runId}""".update.apply()
   }
-
 }

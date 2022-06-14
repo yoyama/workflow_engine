@@ -9,7 +9,7 @@ case class WorkflowRun(
   state: Int,
   startAt: Option[ZonedDateTime] = None,
   finishAt: Option[ZonedDateTime] = None,
-  tag: Option[Any] = None,
+  tag: Option[String] = None,
   createdAt: ZonedDateTime,
   updatedAt: ZonedDateTime) {
 
@@ -35,7 +35,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
     state = rs.get(wr.state),
     startAt = rs.get(wr.startAt),
     finishAt = rs.get(wr.finishAt),
-    tag = rs.anyOpt(wr.tag),
+    tag = rs.stringOpt(wr.tag),
     createdAt = rs.get(wr.createdAt),
     updatedAt = rs.get(wr.updatedAt)
   )
@@ -82,7 +82,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
     state: Int,
     startAt: Option[ZonedDateTime] = None,
     finishAt: Option[ZonedDateTime] = None,
-    tag: Option[Any] = None,
+    tag: Option[String] = None,
     createdAt: ZonedDateTime,
     updatedAt: ZonedDateTime)(implicit session: DBSession): WorkflowRun = {
     sql"""
