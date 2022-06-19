@@ -17,11 +17,11 @@ class DatabaseWorkflowRepository extends WorkflowRepository {
     } yield WorkflowRunAll(w, tasks, links)
   }
 
-  def getWorkflowRun(id: Int): Transaction[WorkflowRun] = {
+  def getWorkflowRun(runId: Int): Transaction[WorkflowRun] = {
     ScalikeJDBCTransaction.from { (session: DBSession) =>
-      WorkflowRun.find(id)(session) match {
+      WorkflowRun.find(runId)(session) match {
         case Some(w) => w
-        case None => throw new NoSuchElementException(id.toString)
+        case None => throw new NoSuchElementException(runId.toString)
       }
     }
   }
@@ -32,9 +32,9 @@ class DatabaseWorkflowRepository extends WorkflowRepository {
     }
   }
 
-  def getLinkRun(run_id: Int): Transaction[Seq[LinkRun]] = {
+  def getLinkRun(runId: Int): Transaction[Seq[LinkRun]] = {
     ScalikeJDBCTransaction.from { (session: DBSession) =>
-      LinkRun.findAllBy(sqls"run_id = ${run_id}")(session)
+      LinkRun.findAllBy(sqls"run_id = ${runId}")(session)
     }
   }
 

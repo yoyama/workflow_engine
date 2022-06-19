@@ -1,26 +1,26 @@
 package io.github.yoyama.wf.workflow
 
 import io.github.yoyama.utils.OptionHelper._
-import io.github.yoyama.wf.WfID
-import io.github.yoyama.wf.dag.{CellID,Link,Id2Cell,Dag,DagOps,DagCell}
+import io.github.yoyama.wf.{RunID, TaskID}
+import io.github.yoyama.wf.dag.{CellID,LinkMap,Id2Cell,Dag,DagOps,DagCell}
 import io.github.yoyama.wf.db.model.running.{LinkRun, TaskRun, WorkflowRun}
 import io.github.yoyama.wf.repository.{Transaction, TransactionResult, TransactionRunner, WorkflowRepository}
 
 import java.time.Instant
 import scala.util.{Success, Try}
 
-case class TaskNotFoundException(id:CellID) extends RuntimeException
+case class TaskNotFoundException(id:TaskID) extends RuntimeException
 
 // A task of Dag for workflow
 // state: 0:wait 1:ready 5:provisioning 11:initializing 21:running 31:post processing 98:stopping 99:stop
-case class WorkflowTask(id:CellID, name: String, tType: String, config: String, state: Int = 0,
+case class WorkflowTask(id:TaskID, name: String, tType: String, config: String, state: Int = 0,
                         result: Option[Int] = None, errorCode: Option[Int] = None,
                         startAt: Option[Instant] = None, finishAt: Option[Instant] = None, tags:Map[String,String] = Map.empty)
 // A dag for workflow
-case class WorkflowDag(id:WfID, dag:Dag, tasks:Map[CellID,WorkflowTask], tags:Map[String,String]) {
-  def getTask(id:CellID):Option[WorkflowTask] = tasks.get(id)
-  def getParents(id:CellID):Seq[CellID] = dag.parents.get(id).map(_.toSeq).getOrElse(Seq.empty)
-  def getChildren(id:CellID):Seq[CellID] = dag.children.get(id).map(_.toSeq).getOrElse(Seq.empty)
+case class WorkflowDag(id:RunID, dag:Dag, tasks:Map[TaskID,WorkflowTask], tags:Map[String,String]) {
+  def getTask(id:TaskID):Option[WorkflowTask] = tasks.get(id)
+  def getParents(id:TaskID):Seq[TaskID] = dag.parents.get(id).map(_.toSeq).getOrElse(Seq.empty)
+  def getChildren(id:TaskID):Seq[TaskID] = dag.children.get(id).map(_.toSeq).getOrElse(Seq.empty)
 
   def printInfo: String = {
     val sb = new StringBuilder()
@@ -37,7 +37,7 @@ case class WorkflowDag(id:WfID, dag:Dag, tasks:Map[CellID,WorkflowTask], tags:Ma
 class WorkflowDagOps(val wfRepo:WorkflowRepository)(implicit val tRunner:TransactionRunner) extends DagOps {
 
   // Create WorkflowDag by loading data in DB
-  def loadWorkflow(wfid:WfID): Try[WorkflowDag] = {
+  def loadWorkflow(wfid:RunID): Try[WorkflowDag] = {
     val transaction: Transaction[(WorkflowRun, Seq[TaskRun], Seq[LinkRun])] = for {
       wf <- wfRepo.getWorkflowRun(wfid)
       t <- wfRepo.getTaskRun(wfid)
@@ -66,28 +66,28 @@ class WorkflowDagOps(val wfRepo:WorkflowRepository)(implicit val tRunner:Transac
         //ToDo tags
       ))
     }
-    def convLink(lr:Seq[LinkRun]):Try[Seq[(CellID,CellID)]] = {
+    def convLink(lr:Seq[LinkRun]):Try[Seq[(TaskID,TaskID)]] = {
       val ret = lr.map(l => (l.parent, l.child))
       Success(ret)
     }
 
     for {
       tasks: Seq[WorkflowTask] <- tasksR.toList.traverse(convTask)
-      links: Seq[(CellID,CellID)] <- convLink(linksR)
+      links: Seq[(TaskID,TaskID)] <- convLink(linksR)
       wf <- createWorkflow(wfR.runId, tasks, links)
     } yield wf
   }
 
-  def createWorkflow(id:WfID, wfTasks:Seq[WorkflowTask], pairs:Seq[(CellID,CellID)], tags:Map[String,String] = Map.empty):Try[WorkflowDag] = {
-    def convLink(pairs:Seq[(CellID,CellID)]):Try[(Link,Link)] = {
+  def createWorkflow(id:RunID, wfTasks:Seq[WorkflowTask], pairs:Seq[(TaskID,TaskID)], tags:Map[String,String] = Map.empty):Try[WorkflowDag] = {
+    def convLink(pairs:Seq[(TaskID,TaskID)]):Try[(LinkMap,LinkMap)] = {
       val ret = pairs.foldLeft((Map.empty[Int,Set[Int]], Map.empty[Int,Set[Int]])) { (acc, c) =>
-        val (pLink:Link, cLink:Link) = acc
-        val (pid:CellID, cid:CellID) = c
-        val newPLink: Link = pLink.get(cid) match {
+        val (pLink:LinkMap, cLink:LinkMap) = acc
+        val (pid:TaskID, cid:TaskID) = c
+        val newPLink: LinkMap = pLink.get(cid) match {
           case Some(values) => pLink.updated(cid, values + pid )
           case None => pLink.updated(cid, Set(pid))
         }
-        val newCLink: Link = cLink.get(pid) match {
+        val newCLink: LinkMap = cLink.get(pid) match {
           case Some(values) => cLink.updated(pid, values + cid )
           case None => cLink.updated(pid, Set(cid))
         }
@@ -95,7 +95,7 @@ class WorkflowDagOps(val wfRepo:WorkflowRepository)(implicit val tRunner:Transac
       }
       Success(ret)
     }
-    def convCells(tasks:Seq[WorkflowTask]):Try[Map[CellID,DagCell]] = {
+    def convCells(tasks:Seq[WorkflowTask]):Try[Map[TaskID,DagCell]] = {
       Success(
         tasks
           .map(t => (t.id, DagCell(t.id, t.state, Instant.now())))
@@ -112,7 +112,7 @@ class WorkflowDagOps(val wfRepo:WorkflowRepository)(implicit val tRunner:Transac
     } yield WorkflowDag(id, dag, id2wftasks, tags)
   }
 
-  def fetchNextTasks(wfDag:WorkflowDag, id:CellID):Try[Seq[WorkflowTask]] = {
+  def fetchNextTasks(wfDag:WorkflowDag, id:TaskID):Try[Seq[WorkflowTask]] = {
     import cats.implicits._
 
     val children = wfDag.getChildren(id)
@@ -124,7 +124,7 @@ class WorkflowDagOps(val wfRepo:WorkflowRepository)(implicit val tRunner:Transac
     tasks.sequence // convert Seq[Try[_]} to Try[Seq[_]] by cats
   }
 
-  def updateTaskStates(wfDag:WorkflowDag, ids:Seq[CellID], state:Int): Try[WorkflowDag] = {
+  def updateTaskStates(wfDag:WorkflowDag, ids:Seq[TaskID], state:Int): Try[WorkflowDag] = {
 
     ???
   }

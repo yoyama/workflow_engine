@@ -8,7 +8,7 @@ case class DagCell(id: CellID, state: Int, createdAt: Instant)
 case class DagDuplicatedCellException(id:CellID) extends RuntimeException
 case class DagCellNotFoundException(id:CellID) extends RuntimeException
 
-case class Dag(root: DagCell, terminal: DagCell, cells: Id2Cell, parents: Link, children: Link) {
+case class Dag(root: DagCell, terminal: DagCell, cells: Id2Cell, parents: LinkMap, children: LinkMap) {
   def getCell(id:CellID):Option[DagCell] = cells.get(id)
 
   def getParents(id:CellID):Set[DagCell] = {
@@ -84,7 +84,7 @@ trait DagOps {
     sort(Seq(dag.root), Seq.empty, dag.cells, dag.children, dag.parents)
   }
 
-  private def sort(noinput:Seq[DagCell], sorted:Seq[DagCell], cells:Id2Cell, children:Link, parents:Link): Try[Seq[DagCell]] = {
+  private def sort(noinput:Seq[DagCell], sorted:Seq[DagCell], cells:Id2Cell, children:LinkMap, parents:LinkMap): Try[Seq[DagCell]] = {
     println(s"noinput:${noinput}, sorted:${sorted}, cells:${cells}")
     println("")
     def getChildren(id:CellID): Try[Set[DagCell]] = {
@@ -99,7 +99,7 @@ trait DagOps {
       }
     }
     // Remove link between pid <-> cells from parents
-    def removeParents(pid:CellID, cells:Set[DagCell]): Try[Link] = {
+    def removeParents(pid:CellID, cells:Set[DagCell]): Try[LinkMap] = {
       //ToDo check existence
       val ret = cells.foldLeft(parents){ (acc, c) =>
         acc.get(c.id).map(x => acc.updated(c.id, x - pid)).getOrElse(acc)
@@ -108,7 +108,7 @@ trait DagOps {
     }
 
     // Remove link between id <-> its children
-    def removeChildren(id:CellID): Try[Link] = {
+    def removeChildren(id:CellID): Try[LinkMap] = {
       val ret = children.get(id) match {
         case None => children.updated(id, Set.empty)
         case Some(v) => children.updated(id, Set.empty)
@@ -152,7 +152,7 @@ trait DagOps {
     }
   }
 
-  private def link(links:Link, p:CellID, c:CellID): Try[Link] = {
+  private def link(links:LinkMap, p:CellID, c:CellID): Try[LinkMap] = {
     val children = links.get(p)
     children.match {
       case Some(cl) => Success(links + (p -> (cl + c)))
@@ -160,7 +160,7 @@ trait DagOps {
     }
   }
 
-  private def unlink(links:Link, p:CellID, c:CellID): Try[Link] = {
+  private def unlink(links:LinkMap, p:CellID, c:CellID): Try[LinkMap] = {
     val children = links.get(p)
     children.match {
       case Some(cl) => {

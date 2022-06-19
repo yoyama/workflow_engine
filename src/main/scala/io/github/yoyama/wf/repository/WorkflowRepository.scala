@@ -7,19 +7,19 @@ import io.github.yoyama.wf.db.model.running.WorkflowRunAll
 import scala.util.Try
 
 trait WorkflowRepository() {
-  def getWorkflowRun(id:Int):Transaction[WorkflowRun]
-  def getTaskRun(wfid:Int):Transaction[Seq[TaskRun]]
-  def getLinkRun(wfid:Int):Transaction[Seq[LinkRun]]
+  def getWorkflowRun(runId:Int):Transaction[WorkflowRun]
+  def getTaskRun(runId:Int):Transaction[Seq[TaskRun]]
+  def getLinkRun(runId:Int):Transaction[Seq[LinkRun]]
 
   def assignNewRunId():Transaction[Int]
   // Save a workflow to all related tables. if wfid is None, assign new id.
-  def saveNewWorkflowRunAll(wfa:WorkflowRunAll, wfid:Option[Int] = None):Transaction[WorkflowRunAll]
+  def saveNewWorkflowRunAll(wfa:WorkflowRunAll, runId:Option[Int] = None):Transaction[WorkflowRunAll]
 
   // Update a workflow to all related tables. Existing records are deleted then inserted.
   def updateWorkflowRunAll(wfa: WorkflowRunAll):Transaction[WorkflowRunAll]
   
-  def deleteLinkRun(wfid:Int):Transaction[Int]
-  def deleteTaskRun(wfid:Int):Transaction[Int]
+  def deleteLinkRun(runId:Int):Transaction[Int]
+  def deleteTaskRun(runId:Int):Transaction[Int]
 }
 
 
