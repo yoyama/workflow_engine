@@ -54,7 +54,7 @@ class WorkflowDagOps(val wfRepo:WorkflowRepository)(implicit val tRunner:Transac
     import cats.implicits._
     def convTask(tr:TaskRun):Try[WorkflowTask] = {
       Success(WorkflowTask(
-        id = tr.id,
+        id = tr.taskId,
         name = tr.name,
         tType = tr.`type`,
         config = tr.config.toString,

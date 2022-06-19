@@ -15,7 +15,7 @@ create table running.workflow_run(
 );
 
 create table running.task_run(
-    id int,
+    task_id int,
     run_id int not null,
     name varchar not null,
     type varchar not null,
@@ -33,7 +33,7 @@ create table running.task_run(
     tag jsonb,
     created_at timestamp not null,
     updated_at timestamp not null,
-    primary key(id, run_id),
+    primary key(task_id, run_id),
     FOREIGN KEY(run_id) references running.workflow_run(run_id)
 );
 
@@ -44,8 +44,8 @@ create table running.link_run(
     created_at timestamp not null,
     primary key(run_id, parent, child),
     FOREIGN KEY(run_id) references running.workflow_run(run_id),
-    FOREIGN KEY(parent, run_id) references running.task_run(id, run_id),
-    FOREIGN KEY(child, run_id) references running.task_run(id, run_id)
+    FOREIGN KEY(parent, run_id) references running.task_run(task_id, run_id),
+    FOREIGN KEY(child, run_id) references running.task_run(task_id, run_id)
 );
 
 create sequence running.run_id;

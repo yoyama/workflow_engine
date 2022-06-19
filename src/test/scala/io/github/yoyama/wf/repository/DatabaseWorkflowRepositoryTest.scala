@@ -39,8 +39,8 @@ class DatabaseWorkflowRepositoryTest  extends AnyFlatSpec {
     val wfa: WorkflowRunAll = WorkflowRunAll(
       wf = WorkflowRun(runId = 1, name = "test1", state = 0, createdAt = now, updatedAt = now),
       tasks = Seq(
-        TaskRun(id = 2, runId = 1, name = "t2", `type` ="aaaa", config = "{}", state = 0, createdAt = now, updatedAt = now),
-        TaskRun(id = 3, runId = 1, name = "t3", `type` ="aaaa", config = "{}", state = 0, createdAt = now, updatedAt = now)
+        TaskRun(taskId = 2, runId = 1, name = "t2", `type` ="aaaa", config = "{}", state = 0, createdAt = now, updatedAt = now),
+        TaskRun(taskId = 3, runId = 1, name = "t3", `type` ="aaaa", config = "{}", state = 0, createdAt = now, updatedAt = now)
       ),
       links = Seq(
         //LinkRun()
@@ -59,7 +59,7 @@ class DatabaseWorkflowRepositoryTest  extends AnyFlatSpec {
     val wfa: WorkflowRunAll = WorkflowRunAll(
       wf = WorkflowRun(runId = 1, name = "test1", state = 0, createdAt = now, updatedAt = now),
       tasks = Seq(
-        TaskRun(id = 2, runId = 1, name = "t1", `type` ="aaaa", config = "{}", state = 0, createdAt = now, updatedAt = now)
+        TaskRun(taskId = 2, runId = 1, name = "t1", `type` ="aaaa", config = "{}", state = 0, createdAt = now, updatedAt = now)
       ),
       links = Seq()
     )
