@@ -9,6 +9,8 @@ import io.github.yoyama.wf.repository.{Transaction, TransactionResult, Transacti
 import java.time.Instant
 import scala.util.{Success, Try}
 
+case class TaskNotFoundException(id:CellID) extends RuntimeException
+
 // A task of Dag for workflow
 // state: 0:wait 1:ready 5:provisioning 11:initializing 21:running 31:post processing 98:stopping 99:stop
 case class WorkflowTask(id:CellID, name: String, tType: String, config: String, state: Int = 0,
@@ -110,9 +112,22 @@ class WorkflowDagOps(val wfRepo:WorkflowRepository)(implicit val tRunner:Transac
     } yield WorkflowDag(id, dag, id2wftasks, tags)
   }
 
-  def fetchNextTasks(wfDag:WorkflowDag):Seq[WorkflowTask] = ???
+  def fetchNextTasks(wfDag:WorkflowDag, id:CellID):Try[Seq[WorkflowTask]] = {
+    import cats.implicits._
 
-  def updateTaskStates(wfDag:WorkflowDag, ids:Seq[CellID], state:Int): Try[WorkflowDag] = ???
+    val children = wfDag.getChildren(id)
+    val readyChildren = children.filter( c => {
+      val parents = wfDag.getParents(c).filter(p => wfDag.getTask(p).get.state != 99)
+      parents.size == 0 // check, the child of all parents are in stop state)
+    })
+    val tasks: Seq[Try[WorkflowTask]] = readyChildren.map(id => wfDag.getTask(id).toTry(TaskNotFoundException(id)))
+    tasks.sequence // convert Seq[Try[_]} to Try[Seq[_]] by cats
+  }
+
+  def updateTaskStates(wfDag:WorkflowDag, ids:Seq[CellID], state:Int): Try[WorkflowDag] = {
+
+    ???
+  }
 
   def runNextTasks(wfDag:WorkflowDag): Try[(WorkflowDag, Seq[WorkflowTask])] = ???
 
