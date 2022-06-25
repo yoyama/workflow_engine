@@ -6,7 +6,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 import java.time.ZonedDateTime
 
-class DatabaseWorkflowRepositoryTest  extends AnyFlatSpec {
+class DatabaseWorkflowRunRepositoryTest  extends AnyFlatSpec {
   Class.forName("org.postgresql.Driver")
   //DBs.setup()
   val jdbcUrl = sys.env.getOrElse("TEST_JDBC_URL", "jdbc:postgresql://localhost:5432/test_workflow")
@@ -16,7 +16,7 @@ class DatabaseWorkflowRepositoryTest  extends AnyFlatSpec {
   implicit val transactionRunner:TransactionRunner = new ScalikeJDBCTransactionRunner()
 
   "assignNewRunId" should "work" in {
-    val repo = new DatabaseWorkflowRepository()
+    val repo = new DatabaseWorkflowRunRepository()
     val ret = repo.assignNewRunId().run
     val id1 = {
       val ret = repo.assignNewRunId().run
@@ -34,7 +34,7 @@ class DatabaseWorkflowRepositoryTest  extends AnyFlatSpec {
 
   "saveNewWorkflowRunAll" should "work" in {
     val now = ZonedDateTime.now()
-    val repo = new DatabaseWorkflowRepository()
+    val repo = new DatabaseWorkflowRunRepository()
 
     val wfa: WorkflowRunAll = WorkflowRunAll(
       wf = WorkflowRun(runId = 1, name = "test1", state = 0, createdAt = now, updatedAt = now),
@@ -54,7 +54,7 @@ class DatabaseWorkflowRepositoryTest  extends AnyFlatSpec {
 
   "updateNewWorkflowRunAll" should "work" in {
     val now = ZonedDateTime.now()
-    val repo = new DatabaseWorkflowRepository()
+    val repo = new DatabaseWorkflowRunRepository()
 
     val wfa: WorkflowRunAll = WorkflowRunAll(
       wf = WorkflowRun(runId = 1, name = "test1", state = 0, createdAt = now, updatedAt = now),

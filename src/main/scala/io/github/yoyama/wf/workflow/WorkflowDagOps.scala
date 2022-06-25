@@ -1,40 +1,17 @@
 package io.github.yoyama.wf.workflow
 
-import io.github.yoyama.utils.OptionHelper._
-import io.github.yoyama.wf.{RunID, TaskID}
-import io.github.yoyama.wf.dag.{CellID,LinkMap,Id2Cell,Dag,DagOps,DagCell}
+import io.github.yoyama.utils.OptionHelper.*
+import io.github.yoyama.wf.dag.*
 import io.github.yoyama.wf.db.model.running.{LinkRun, TaskRun, WorkflowRun}
-import io.github.yoyama.wf.repository.{Transaction, TransactionResult, TransactionRunner, WorkflowRepository}
+import io.github.yoyama.wf.repository.{Transaction, TransactionResult, TransactionRunner, WorkflowRunRepository}
+import io.github.yoyama.wf.{RunID, TaskID}
 
 import java.time.Instant
 import scala.util.{Success, Try}
 
 case class TaskNotFoundException(id:TaskID) extends RuntimeException
 
-// A task of Dag for workflow
-// state: 0:wait 1:ready 5:provisioning 11:initializing 21:running 31:post processing 98:stopping 99:stop
-case class WorkflowTask(id:TaskID, name: String, tType: String, config: String, state: Int = 0,
-                        result: Option[Int] = None, errorCode: Option[Int] = None,
-                        startAt: Option[Instant] = None, finishAt: Option[Instant] = None, tags:Map[String,String] = Map.empty)
-// A dag for workflow
-case class WorkflowDag(id:RunID, dag:Dag, tasks:Map[TaskID,WorkflowTask], tags:Map[String,String]) {
-  def getTask(id:TaskID):Option[WorkflowTask] = tasks.get(id)
-  def getParents(id:TaskID):Seq[TaskID] = dag.parents.get(id).map(_.toSeq).getOrElse(Seq.empty)
-  def getChildren(id:TaskID):Seq[TaskID] = dag.children.get(id).map(_.toSeq).getOrElse(Seq.empty)
-
-  def printInfo: String = {
-    val sb = new StringBuilder()
-    sb.append(s"Workflow ID: ${id}  ")
-    sb.append(s"root: id ${dag.root.id}  ")
-    sb.append(s"terminal: id ${dag.terminal.id}\n")
-    sb.append(s"tasks: ")
-    sb.append(tasks.toSeq.sortBy(x => x._1).map(x => s"${x._2.id} ${x._2.name}").mkString(","))
-    sb.toString()
-  }
-}
-
-
-class WorkflowDagOps(val wfRepo:WorkflowRepository)(implicit val tRunner:TransactionRunner) extends DagOps {
+class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:TransactionRunner) extends DagOps {
 
   // Create WorkflowDag by loading data in DB
   def loadWorkflow(wfid:RunID): Try[WorkflowDag] = {
@@ -51,7 +28,7 @@ class WorkflowDagOps(val wfRepo:WorkflowRepository)(implicit val tRunner:Transac
   }
 
   def createWorkflow(wfR:WorkflowRun, tasksR:Seq[TaskRun], linksR:Seq[LinkRun]): Try[WorkflowDag] = {
-    import cats.implicits._
+    import cats.implicits.*
     def convTask(tr:TaskRun):Try[WorkflowTask] = {
       Success(WorkflowTask(
         id = tr.taskId,
@@ -113,7 +90,7 @@ class WorkflowDagOps(val wfRepo:WorkflowRepository)(implicit val tRunner:Transac
   }
 
   def fetchNextTasks(wfDag:WorkflowDag, id:TaskID):Try[Seq[WorkflowTask]] = {
-    import cats.implicits._
+    import cats.implicits.*
 
     val children = wfDag.getChildren(id)
     val readyChildren = children.filter( c => {
@@ -131,6 +108,20 @@ class WorkflowDagOps(val wfRepo:WorkflowRepository)(implicit val tRunner:Transac
 
   def runNextTasks(wfDag:WorkflowDag): Try[(WorkflowDag, Seq[WorkflowTask])] = ???
 
-  def saveWorkflow(wfDag:WorkflowDag):Try[WorkflowDag] = ???
+  def saveWorkflow(wfDag:WorkflowDag):Try[WorkflowDag] = {
+    /**
+    val transaction: Transaction[(WorkflowRun, Seq[TaskRun], Seq[LinkRun])] = for {
+      wf <- wfRepo.getWorkflowRun(wfid)
+      t <- wfRepo.getTaskRun(wfid)
+      l <- wfRepo.getLinkRun(wfid)
+    } yield (wf,t, l)
+    for {
+      tResult <-transaction.run.v.toTry
+      wfRun:WorkflowRun <- Success(tResult._1)
+      wf <- createWorkflow(wfRun, tResult._2, tResult._3)
+    } yield wf
+     */
+    ???
+  }
 }
 

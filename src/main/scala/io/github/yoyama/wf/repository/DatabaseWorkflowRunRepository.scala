@@ -8,7 +8,7 @@ import io.github.yoyama.wf.db.model.running
 import scalikejdbc._
 import scalikejdbc.config._
 
-class DatabaseWorkflowRepository extends WorkflowRepository {
+class DatabaseWorkflowRunRepository extends WorkflowRunRepository {
   def getWorkflowRunAll(runId: Int): Transaction[WorkflowRunAll] = {
     for {
       w <- getWorkflowRun(runId)

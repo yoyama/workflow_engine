@@ -6,7 +6,7 @@ import io.github.yoyama.wf.db.model.running.WorkflowRunAll
 
 import scala.util.Try
 
-trait WorkflowRepository() {
+trait WorkflowRunRepository() {
   def getWorkflowRun(runId:Int):Transaction[WorkflowRun]
   def getTaskRun(runId:Int):Transaction[Seq[TaskRun]]
   def getLinkRun(runId:Int):Transaction[Seq[LinkRun]]
