@@ -1,7 +1,7 @@
 package io.github.yoyama.wf.db.model.running
 
 import scalikejdbc._
-import java.time.{ZonedDateTime}
+import java.time.{Instant, ZonedDateTime}
 
 case class TaskRun(
                     taskId: Int,
@@ -14,14 +14,14 @@ case class TaskRun(
                     outputParams: Option[String] = None,
                     systemParams: Option[String] = None,
                     stateParams: Option[String] = None,
-                    nextPoll: Option[ZonedDateTime] = None,
+                    nextPoll: Option[Instant] = None,
                     result: Option[Int] = None,
                     errCode: Option[Int] = None,
-                    startAt: Option[ZonedDateTime] = None,
-                    finishAt: Option[ZonedDateTime] = None,
+                    startAt: Option[Instant] = None,
+                    finishAt: Option[Instant] = None,
                     tag: Option[String] = None,
-                    createdAt: ZonedDateTime,
-                    updatedAt: ZonedDateTime) {
+                    createdAt: Instant,
+                    updatedAt: Instant) {
 
   def save()(implicit session: DBSession): TaskRun = TaskRun.save(this)(session)
 
@@ -110,14 +110,14 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
               outputParams: Option[String] = None,
               systemParams: Option[String] = None,
               stateParams: Option[String] = None,
-              nextPoll: Option[ZonedDateTime] = None,
+              nextPoll: Option[Instant] = None,
               result: Option[Int] = None,
               errCode: Option[Int] = None,
-              startAt: Option[ZonedDateTime] = None,
-              finishAt: Option[ZonedDateTime] = None,
+              startAt: Option[Instant] = None,
+              finishAt: Option[Instant] = None,
               tag: Option[String] = None,
-              createdAt: ZonedDateTime,
-              updatedAt: ZonedDateTime)(implicit session: DBSession): TaskRun = {
+              createdAt: Instant,
+              updatedAt: Instant)(implicit session: DBSession): TaskRun = {
     sql"""
       insert into ${TaskRun.table} (
         ${column.taskId},

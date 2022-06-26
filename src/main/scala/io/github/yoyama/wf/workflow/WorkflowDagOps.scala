@@ -34,14 +34,14 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
         id = tr.taskId,
         name = tr.name,
         tType = tr.`type`,
-        config = tr.config.toString,
+        config = tr.config,
         state = tr.state,
         result = tr.result,
         errorCode = tr.errCode,
-        startAt = tr.startAt.map(_.toInstant),
-        finishAt = tr.finishAt.map(_.toInstant),
-        createdAt = tr.createdAt.toInstant,
-        updatedAt = tr.updatedAt.toInstant
+        startAt = tr.startAt,
+        finishAt = tr.finishAt,
+        createdAt = tr.createdAt,
+        updatedAt = tr.updatedAt
         //ToDo tags
       ))
     }

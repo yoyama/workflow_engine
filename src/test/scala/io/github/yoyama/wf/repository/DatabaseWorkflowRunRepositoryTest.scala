@@ -33,11 +33,11 @@ class DatabaseWorkflowRunRepositoryTest  extends AnyFlatSpec {
   }
 
   "saveNewWorkflowRunAll" should "work" in {
-    val now = ZonedDateTime.now()
+    val now = Instant.now()
     val repo = new DatabaseWorkflowRunRepository()
 
     val wfa: WorkflowRunAll = WorkflowRunAll(
-      wf = WorkflowRun(runId = 1, name = "test1", state = 0, createdAt = now.toInstant, updatedAt = now.toInstant),
+      wf = WorkflowRun(runId = 1, name = "test1", state = 0, createdAt = now, updatedAt = now),
       tasks = Seq(
         TaskRun(taskId = 2, runId = 1, name = "t2", `type` ="aaaa", config = "{}", state = 0, createdAt = now, updatedAt = now),
         TaskRun(taskId = 3, runId = 1, name = "t3", `type` ="aaaa", config = "{}", state = 0, createdAt = now, updatedAt = now)
@@ -59,7 +59,7 @@ class DatabaseWorkflowRunRepositoryTest  extends AnyFlatSpec {
     val wfa: WorkflowRunAll = WorkflowRunAll(
       wf = WorkflowRun(runId = 1, name = "test1", state = 0, createdAt = now.toInstant, updatedAt = now.toInstant),
       tasks = Seq(
-        TaskRun(taskId = 2, runId = 1, name = "t1", `type` ="aaaa", config = "{}", state = 0, createdAt = now, updatedAt = now)
+        TaskRun(taskId = 2, runId = 1, name = "t1", `type` ="aaaa", config = "{}", state = 0, createdAt = now.toInstant, updatedAt = now.toInstant)
       ),
       links = Seq()
     )
