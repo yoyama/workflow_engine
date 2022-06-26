@@ -4,7 +4,7 @@ import scalikejdbc.*
 import scalikejdbc.config.*
 import org.scalatest.flatspec.AnyFlatSpec
 
-import java.time.ZonedDateTime
+import java.time.{Instant,ZonedDateTime}
 
 class DatabaseWorkflowRunRepositoryTest  extends AnyFlatSpec {
   Class.forName("org.postgresql.Driver")
@@ -37,7 +37,7 @@ class DatabaseWorkflowRunRepositoryTest  extends AnyFlatSpec {
     val repo = new DatabaseWorkflowRunRepository()
 
     val wfa: WorkflowRunAll = WorkflowRunAll(
-      wf = WorkflowRun(runId = 1, name = "test1", state = 0, createdAt = now, updatedAt = now),
+      wf = WorkflowRun(runId = 1, name = "test1", state = 0, createdAt = now.toInstant, updatedAt = now.toInstant),
       tasks = Seq(
         TaskRun(taskId = 2, runId = 1, name = "t2", `type` ="aaaa", config = "{}", state = 0, createdAt = now, updatedAt = now),
         TaskRun(taskId = 3, runId = 1, name = "t3", `type` ="aaaa", config = "{}", state = 0, createdAt = now, updatedAt = now)
@@ -57,7 +57,7 @@ class DatabaseWorkflowRunRepositoryTest  extends AnyFlatSpec {
     val repo = new DatabaseWorkflowRunRepository()
 
     val wfa: WorkflowRunAll = WorkflowRunAll(
-      wf = WorkflowRun(runId = 1, name = "test1", state = 0, createdAt = now, updatedAt = now),
+      wf = WorkflowRun(runId = 1, name = "test1", state = 0, createdAt = now.toInstant, updatedAt = now.toInstant),
       tasks = Seq(
         TaskRun(taskId = 2, runId = 1, name = "t1", `type` ="aaaa", config = "{}", state = 0, createdAt = now, updatedAt = now)
       ),

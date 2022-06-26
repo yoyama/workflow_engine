@@ -1,17 +1,18 @@
 package io.github.yoyama.wf.db.model.running
 
-import scalikejdbc._
-import java.time.{ZonedDateTime}
+import scalikejdbc.*
+
+import java.time.{Instant, ZonedDateTime}
 
 case class WorkflowRun(
   runId: Int,
   name: String,
   state: Int,
-  startAt: Option[ZonedDateTime] = None,
-  finishAt: Option[ZonedDateTime] = None,
+  startAt: Option[Instant] = None,
+  finishAt: Option[Instant] = None,
   tag: Option[String] = None,
-  createdAt: ZonedDateTime,
-  updatedAt: ZonedDateTime) {
+  createdAt: Instant,
+  updatedAt: Instant) {
 
   def save()(implicit session: DBSession): WorkflowRun = WorkflowRun.save(this)(session)
 
@@ -80,11 +81,11 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
     runId: Int,
     name: String,
     state: Int,
-    startAt: Option[ZonedDateTime] = None,
-    finishAt: Option[ZonedDateTime] = None,
+    startAt: Option[Instant] = None,
+    finishAt: Option[Instant] = None,
     tag: Option[String] = None,
-    createdAt: ZonedDateTime,
-    updatedAt: ZonedDateTime)(implicit session: DBSession): WorkflowRun = {
+    createdAt: Instant,
+    updatedAt: Instant)(implicit session: DBSession): WorkflowRun = {
     sql"""
       insert into ${WorkflowRun.table} (
         ${column.runId},
