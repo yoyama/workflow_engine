@@ -1,8 +1,8 @@
 package io.github.yoyama.wf.db.model.running
 
-import scalikejdbc.*
+import scalikejdbc._
 
-import java.time.{Instant, ZonedDateTime}
+import java.time.Instant
 
 case class WorkflowRun(
   runId: Int,

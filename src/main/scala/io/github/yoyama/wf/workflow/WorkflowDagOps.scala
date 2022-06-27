@@ -124,8 +124,8 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
       wf <- toWorkflowRun(wfDag)
     } yield WorkflowRunAll(
       wf = wf,
-      tasks = Seq(),
-      links = Seq()
+      tasks = Seq(), //ToDo
+      links = Seq()  //ToDo
     )
   }
 
@@ -136,9 +136,9 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
       state = wfDag.state,
       startAt = wfDag.startAt,
       finishAt = wfDag.finishAt,
-      tag = None,
-      createdAt = null,
-      updatedAt = null
+      tag = None, //ToDo
+      createdAt = null, //ToDo
+      updatedAt = null  //ToDo
     )
     ???
   }

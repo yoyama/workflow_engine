@@ -1,7 +1,7 @@
 package io.github.yoyama.wf.db.model.running
 
 import scalikejdbc._
-import java.time.{Instant, ZonedDateTime}
+import java.time.Instant
 
 case class TaskRun(
                     taskId: Int,

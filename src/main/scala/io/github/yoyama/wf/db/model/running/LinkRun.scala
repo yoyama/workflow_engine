@@ -1,13 +1,13 @@
 package io.github.yoyama.wf.db.model.running
 
 import scalikejdbc._
-import java.time.{ZonedDateTime}
+import java.time.Instant
 
 case class LinkRun(
   runId: Int,
   parent: Int,
   child: Int,
-  createdAt: ZonedDateTime) {
+  createdAt: Instant) {
 
   def save()(implicit session: DBSession): LinkRun = LinkRun.save(this)(session)
 
@@ -72,7 +72,7 @@ object LinkRun extends SQLSyntaxSupport[LinkRun] {
     runId: Int,
     parent: Int,
     child: Int,
-    createdAt: ZonedDateTime)(implicit session: DBSession): LinkRun = {
+    createdAt: Instant)(implicit session: DBSession): LinkRun = {
     sql"""
       insert into ${LinkRun.table} (
         ${column.runId},
