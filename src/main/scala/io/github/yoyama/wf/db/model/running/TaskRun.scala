@@ -19,7 +19,7 @@ case class TaskRun(
                     errCode: Option[Int] = None,
                     startAt: Option[Instant] = None,
                     finishAt: Option[Instant] = None,
-                    tag: Option[String] = None,
+                    tags: Option[String] = None,
                     createdAt: Instant,
                     updatedAt: Instant) {
 
@@ -36,7 +36,7 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
 
   override val tableName = "task_run"
 
-  override val columns = Seq("task_id", "run_id", "name", "type", "config", "state", "input_params", "output_params", "system_params", "state_params", "next_poll", "result", "err_code", "start_at", "finish_at", "tag", "created_at", "updated_at")
+  override val columns = Seq("task_id", "run_id", "name", "type", "config", "state", "input_params", "output_params", "system_params", "state_params", "next_poll", "result", "err_code", "start_at", "finish_at", "tags", "created_at", "updated_at")
 
   def apply(tr: SyntaxProvider[TaskRun])(rs: WrappedResultSet): TaskRun = apply(tr.resultName)(rs)
   def apply(tr: ResultName[TaskRun])(rs: WrappedResultSet): TaskRun = new TaskRun(
@@ -55,7 +55,7 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
     errCode = rs.get(tr.errCode),
     startAt = rs.get(tr.startAt),
     finishAt = rs.get(tr.finishAt),
-    tag = rs.stringOpt(tr.tag),
+    tags = rs.stringOpt(tr.tags),
     createdAt = rs.get(tr.createdAt),
     updatedAt = rs.get(tr.updatedAt)
   )
@@ -96,7 +96,7 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
     create(
       t.taskId, t.runId, t.name, t.`type`, t.config,
       t.state, t.inputParams, t.outputParams, t.systemParams, t.stateParams, t.nextPoll,
-      t.result, t.errCode, t.startAt, t.finishAt, t.tag, t.createdAt, t.updatedAt)
+      t.result, t.errCode, t.startAt, t.finishAt, t.tags, t.createdAt, t.updatedAt)
   }
 
   def create(
@@ -115,7 +115,7 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
               errCode: Option[Int] = None,
               startAt: Option[Instant] = None,
               finishAt: Option[Instant] = None,
-              tag: Option[String] = None,
+              tags: Option[String] = None,
               createdAt: Instant,
               updatedAt: Instant)(implicit session: DBSession): TaskRun = {
     sql"""
@@ -135,7 +135,7 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
         ${column.errCode},
         ${column.startAt},
         ${column.finishAt},
-        ${column.tag},
+        ${column.tags},
         ${column.createdAt},
         ${column.updatedAt}
       ) values (
@@ -154,7 +154,7 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
         ${errCode},
         ${startAt},
         ${finishAt},
-        ${tag},
+        ${tags},
         ${createdAt},
         ${updatedAt}
       )
@@ -176,7 +176,7 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
       errCode = errCode,
       startAt = startAt,
       finishAt = finishAt,
-      tag = tag,
+      tags = tags,
       createdAt = createdAt,
       updatedAt = updatedAt)
   }
@@ -199,7 +199,7 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
         "errCode" -> entity.errCode,
         "startAt" -> entity.startAt,
         "finishAt" -> entity.finishAt,
-        "tag" -> entity.tag,
+        "tags" -> entity.tags,
         "createdAt" -> entity.createdAt,
         "updatedAt" -> entity.updatedAt))
     SQL("""insert into task_run(
@@ -218,7 +218,7 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
       err_code,
       start_at,
       finish_at,
-      tag,
+      tags,
       created_at,
       updated_at
     ) values (
@@ -237,7 +237,7 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
       {errCode},
       {startAt},
       {finishAt},
-      {tag},
+      {tags},
       {createdAt},
       {updatedAt}
     )""").batchByName(params.toSeq: _*).apply[List]()
@@ -263,7 +263,7 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
         ${column.errCode} = ${entity.errCode},
         ${column.startAt} = ${entity.startAt},
         ${column.finishAt} = ${entity.finishAt},
-        ${column.tag} = ${entity.tag},
+        ${column.tags} = ${entity.tags},
         ${column.createdAt} = ${entity.createdAt},
         ${column.updatedAt} = ${entity.updatedAt}
       where

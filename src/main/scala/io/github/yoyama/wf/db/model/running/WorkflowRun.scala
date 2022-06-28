@@ -10,7 +10,7 @@ case class WorkflowRun(
   state: Int,
   startAt: Option[Instant] = None,
   finishAt: Option[Instant] = None,
-  tag: Option[String] = None,
+  tags: Option[String] = None,
   createdAt: Instant,
   updatedAt: Instant) {
 
@@ -27,7 +27,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
 
   override val tableName = "workflow_run"
 
-  override val columns = Seq("run_id", "name", "state", "start_at", "finish_at", "tag", "created_at", "updated_at")
+  override val columns = Seq("run_id", "name", "state", "start_at", "finish_at", "tags", "created_at", "updated_at")
 
   def apply(wr: SyntaxProvider[WorkflowRun])(rs: WrappedResultSet): WorkflowRun = apply(wr.resultName)(rs)
   def apply(wr: ResultName[WorkflowRun])(rs: WrappedResultSet): WorkflowRun = new WorkflowRun(
@@ -36,7 +36,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
     state = rs.get(wr.state),
     startAt = rs.get(wr.startAt),
     finishAt = rs.get(wr.finishAt),
-    tag = rs.stringOpt(wr.tag),
+    tags = rs.stringOpt(wr.tags),
     createdAt = rs.get(wr.createdAt),
     updatedAt = rs.get(wr.updatedAt)
   )
@@ -74,7 +74,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
   }
 
   def create(w:WorkflowRun)(implicit session: DBSession): WorkflowRun = {
-    create(w.runId, w.name, w.state, w.startAt, w.finishAt, w.tag, w.createdAt, w.updatedAt)(session)
+    create(w.runId, w.name, w.state, w.startAt, w.finishAt, w.tags, w.createdAt, w.updatedAt)(session)
   }
 
   def create(
@@ -83,7 +83,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
     state: Int,
     startAt: Option[Instant] = None,
     finishAt: Option[Instant] = None,
-    tag: Option[String] = None,
+    tags: Option[String] = None,
     createdAt: Instant,
     updatedAt: Instant)(implicit session: DBSession): WorkflowRun = {
     sql"""
@@ -93,7 +93,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
         ${column.state},
         ${column.startAt},
         ${column.finishAt},
-        ${column.tag},
+        ${column.tags},
         ${column.createdAt},
         ${column.updatedAt}
       ) values (
@@ -102,7 +102,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
         ${state},
         ${startAt},
         ${finishAt},
-        ${tag},
+        ${tags},
         ${createdAt},
         ${updatedAt}
       )
@@ -114,7 +114,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
       state = state,
       startAt = startAt,
       finishAt = finishAt,
-      tag = tag,
+      tags = tags,
       createdAt = createdAt,
       updatedAt = updatedAt)
   }
@@ -127,7 +127,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
         "state" -> entity.state,
         "startAt" -> entity.startAt,
         "finishAt" -> entity.finishAt,
-        "tag" -> entity.tag,
+        "tags" -> entity.tags,
         "createdAt" -> entity.createdAt,
         "updatedAt" -> entity.updatedAt))
     SQL("""insert into workflow_run(
@@ -136,7 +136,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
       state,
       start_at,
       finish_at,
-      tag,
+      tags,
       created_at,
       updated_at
     ) values (
@@ -145,7 +145,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
       {state},
       {startAt},
       {finishAt},
-      {tag},
+      {tags},
       {createdAt},
       {updatedAt}
     )""").batchByName(params.toSeq: _*).apply[List]()
@@ -161,7 +161,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
         ${column.state} = ${entity.state},
         ${column.startAt} = ${entity.startAt},
         ${column.finishAt} = ${entity.finishAt},
-        ${column.tag} = ${entity.tag},
+        ${column.tags} = ${entity.tags},
         ${column.createdAt} = ${entity.createdAt},
         ${column.updatedAt} = ${entity.updatedAt}
       where

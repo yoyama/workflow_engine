@@ -14,13 +14,13 @@ class WorkflowDagOpsTest extends AnyFlatSpec {
 
   "createWorkflow" should "work" in {
     val tasks = Seq(
-      WorkflowTask(0, "root", "nop", "{}", createdAt = null, updatedAt = null),
-      WorkflowTask(-1, "terminal", "nop", "{}", createdAt = null, updatedAt = null),
-      WorkflowTask(1, "task1", "nop", "{}", createdAt = null, updatedAt = null),
+      WorkflowTask(0, 99, "root", "nop", "{}", createdAt = null, updatedAt = null),
+      WorkflowTask(-1, 99, "terminal", "nop", "{}", createdAt = null, updatedAt = null),
+      WorkflowTask(1, 99, "task1", "nop", "{}", createdAt = null, updatedAt = null),
     )
     val links = Seq((0, 1), (1, -1))
 
-    val wf = wfops.createWorkflow(99, "wf1", tasks, links)
+    val wf = wfops.buildWorkflowDag(99, "wf1", tasks, links)
     println(wf.get.printInfo)
     assert(wf.isSuccess)
     assert(wf.get.id == 99)

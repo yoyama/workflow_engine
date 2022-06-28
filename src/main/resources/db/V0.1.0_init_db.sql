@@ -8,7 +8,7 @@ create table running.workflow_run(
     state int not null,
     start_at timestamp,
     finish_at timestamp,
-    tag jsonb,
+    tags jsonb,
     created_at timestamp not null,
     updated_at timestamp not null,
     primary key(run_id)
@@ -30,7 +30,7 @@ create table running.task_run(
     err_code int,
     start_at timestamp,
     finish_at timestamp,
-    tag jsonb,
+    tags jsonb,
     created_at timestamp not null,
     updated_at timestamp not null,
     primary key(task_id, run_id),
