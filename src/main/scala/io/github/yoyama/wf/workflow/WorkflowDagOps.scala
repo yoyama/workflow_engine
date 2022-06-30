@@ -118,7 +118,7 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
     ???
   }
 
-  def saveWorkflowDag(wfDag: WorkflowDag): Try[WorkflowRunAll] = {
+  def saveNewWorkflowDag(wfDag: WorkflowDag): Try[WorkflowRunAll] = {
     for {
       runAll <- toWorkflowRunAll(wfDag)
       _ <- wfRepo.saveNewWorkflowRunAll(runAll, Some(wfDag.id)).run.v.toTry
@@ -130,10 +130,11 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
     for {
       wf <- toWorkflowRun(wfDag)
       tasks <- wfDag.tasks.values.toList.map(toTaskRun(_)).sequence
+      links <- toLinkRun(wfDag)
     } yield WorkflowRunAll(
       wf = wf,
       tasks = tasks,
-      links = Seq() //ToDo
+      links = links
     )
   }
 
@@ -170,6 +171,14 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
         createdAt = wfTask.createdAt,
         updatedAt = wfTask.updatedAt
       )
+    }
+    ret.toTry
+  }
+
+  def toLinkRun(wfDag: WorkflowDag): Try[Seq[LinkRun]] = {
+    val ret = catching(classOf[RuntimeException]) either {
+      val p2c: Seq[(Int, Int)] = wfDag.dag.children.toList.flatMap(x => x._2.map((x._1, _)))
+      p2c.map(x => LinkRun(runId = wfDag.id, parent = x._1, child = x._2, createdAt = Instant.now()))
     }
     ret.toTry
   }
