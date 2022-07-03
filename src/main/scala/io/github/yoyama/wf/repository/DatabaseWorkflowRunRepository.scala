@@ -78,6 +78,13 @@ class DatabaseWorkflowRunRepository extends WorkflowRunRepository {
     } yield WorkflowRunAll(wf2, tasks2, links2)
   }
 
+  def updateTaskRun(taskRun: TaskRun): Transaction[TaskRun] = {
+    ScalikeJDBCTransaction.from(ss => {
+      TaskRun.update(taskRun)(ss)
+      TaskRun.find(taskRun.taskId, taskRun.runId)(ss).get
+    })
+  }
+
   def deleteLinkRun(runId:Int):Transaction[Int] = {
     ScalikeJDBCTransaction.from { (session: DBSession) =>
       implicit val s = session

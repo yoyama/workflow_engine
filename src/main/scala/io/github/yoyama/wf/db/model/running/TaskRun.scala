@@ -275,4 +275,18 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
   def destroy(entity: TaskRun)(implicit session: DBSession): Int = {
     sql"""delete from ${TaskRun.table} where ${column.taskId} = ${entity.taskId} and ${column.runId} = ${entity.runId}""".update.apply()
   }
+  
+  // update_at is automatically updated, created_at is never updated.
+  def update(entity: TaskRun)(implicit session: DBSession): Int = {
+    sql"""update running.task_run
+           set name = ${entity.name}, type = ${entity.`type`}, config = ${entity.config}, state = ${entity.state},
+           inputParams = ${entity.inputParams}, outputParams = ${entity.outputParams},
+           systemParams = ${entity.systemParams}, stateParams = ${entity.stateParams},
+           nextPoll = ${entity.nextPoll}, result = ${entity.result}, err_code = ${entity.errCode},
+           start_at = ${entity.startAt}, finish_at = ${entity.finishAt},
+           tags = ${entity.tags},
+           updatedAt = now()
+           where run_id = ${entity.runId} and task_id = ${entity.taskId}
+           """.update.apply()
+  }
 }

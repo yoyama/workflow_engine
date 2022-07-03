@@ -118,11 +118,12 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
     ???
   }
 
-  def saveNewWorkflowDag(wfDag: WorkflowDag): Try[WorkflowRunAll] = {
+  def saveNewWorkflowDag(wfDag: WorkflowDag): Try[WorkflowDag] = {
     for {
       runAll <- toWorkflowRunAll(wfDag)
-      _ <- wfRepo.saveNewWorkflowRunAll(runAll, Some(wfDag.id)).run.v.toTry
-    } yield runAll
+      newRunAll <- wfRepo.saveNewWorkflowRunAll(runAll, None).run.v.toTry
+      newWfDag <- loadWorkflowDag(newRunAll.wf.runId)
+    } yield newWfDag
   }
 
   def toWorkflowRunAll(wfDag: WorkflowDag): Try[WorkflowRunAll] = {

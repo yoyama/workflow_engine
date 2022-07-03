@@ -86,6 +86,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
     tags: Option[String] = None,
     createdAt: Instant,
     updatedAt: Instant)(implicit session: DBSession): WorkflowRun = {
+    println(s"YY tags: ${tags}")
     sql"""
       insert into ${WorkflowRun.table} (
         ${column.runId},
@@ -102,7 +103,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
         ${state},
         ${startAt},
         ${finishAt},
-        ${tags},
+        jsonb(${tags}),
         ${createdAt},
         ${updatedAt}
       )
@@ -145,7 +146,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
       {state},
       {startAt},
       {finishAt},
-      {tags},
+      jsonb({tags}),
       {createdAt},
       {updatedAt}
     )""").batchByName(params.toSeq: _*).apply[List]()
@@ -161,7 +162,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
         ${column.state} = ${entity.state},
         ${column.startAt} = ${entity.startAt},
         ${column.finishAt} = ${entity.finishAt},
-        ${column.tags} = ${entity.tags},
+        ${column.tags} = jsonb(${entity.tags}),
         ${column.createdAt} = ${entity.createdAt},
         ${column.updatedAt} = ${entity.updatedAt}
       where
