@@ -1,6 +1,6 @@
 package io.github.yoyama.wf.tag
-import play.api.libs.json.{JsValue, Json}
-
+import play.api.libs.json.{JsValue, JsObject, Json}
+import play.api.libs.json.{Writes, Reads}
 import java.time.Instant
 import scala.util.control.Exception.*
 import scala.util.Try
@@ -12,27 +12,41 @@ case class TagKeyNotFoundExeception(key:String) extends RuntimeException(s"key: 
  *  Key: String
  *  Value: String | Long | Instant
  */
-class Tag(val json: JsValue) {
+class Tag(val json: JsObject) {
 
-  def getString(key:String):Try[String] = {
+  def getString(key:String):Try[String] = getValue[String](key)
+  def getLong(key:String): Try[Long] = getValue[Long](key)
+  def getInstant(key:String): Try[Instant] = getValue[Instant](key)
+
+  private def getValue[T](key:String)(implicit read:Reads[T]): Try[T] = {
     val ret = catching(classOf[RuntimeException]) either {
-      (json \ key).get.as[String]
+      (json \ key).get.as[T]
     }
     ret.toTry
+
   }
-  def getLong(key:String): Try[Long] = ???
-  def getInstant(key:String): Try[Instant] = ???
-  def exist(key:String):Boolean = ???
-  def getKeys():Seq[String] = { ??? }
-  override def toString: String = super.toString
+
+  def exist(key:String):Boolean = (json \ key).isDefined
+  def keys():Set[String] = {
+    json.keys.toSet
+  }
+
+  override def toString: String = {
+    json.toString
+  }
 }
 
 object Tag {
-  def apply(json: JsValue):Tag = new Tag(json)
-  
+  def apply(json: JsObject):Tag = new Tag(json)
+  def apply():Tag = Tag.from("{}").get
+
+  def from(jsonStr: Option[String]): Try[Tag] = {
+    from(jsonStr.getOrElse("{}"))
+  }
+
   def from(jsonStr: String): Try[Tag] = {
     val ret = catching(classOf[RuntimeException]) either {
-      new Tag(Json.parse(jsonStr))
+      new Tag(Json.parse(jsonStr).asInstanceOf[JsObject])
     }
     ret.toTry
   }

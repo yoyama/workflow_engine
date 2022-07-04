@@ -74,7 +74,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
   }
 
   def create(w:WorkflowRun)(implicit session: DBSession): WorkflowRun = {
-    create(w.runId, w.name, w.state, w.startAt, w.finishAt, w.tags, w.createdAt, w.updatedAt)(session)
+    create(w.runId, w.name, w.state, w.startAt, w.finishAt, w.tags)(session)
   }
 
   def create(
@@ -83,9 +83,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
     state: Int,
     startAt: Option[Instant] = None,
     finishAt: Option[Instant] = None,
-    tags: Option[String] = None,
-    createdAt: Instant,
-    updatedAt: Instant)(implicit session: DBSession): WorkflowRun = {
+    tags: Option[String] = None)(implicit session: DBSession): WorkflowRun = {
     println(s"YY tags: ${tags}")
     sql"""
       insert into ${WorkflowRun.table} (
@@ -103,21 +101,13 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
         ${state},
         ${startAt},
         ${finishAt},
-        jsonb(${tags}),
-        ${createdAt},
-        ${updatedAt}
+        jsonb(${tags.getOrElse("{}")}),
+        now(),
+        now()
       )
       """.update.apply()
 
-    WorkflowRun(
-      runId = runId,
-      name = name,
-      state = state,
-      startAt = startAt,
-      finishAt = finishAt,
-      tags = tags,
-      createdAt = createdAt,
-      updatedAt = updatedAt)
+    find(runId).get
   }
 
   def batchInsert(entities: collection.Seq[WorkflowRun])(implicit session: DBSession): List[Int] = {

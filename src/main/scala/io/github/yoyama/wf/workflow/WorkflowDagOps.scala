@@ -1,16 +1,16 @@
 package io.github.yoyama.wf.workflow
 
-import io.github.yoyama.utils.OptionHelper._
-import io.github.yoyama.wf.dag._
+import io.github.yoyama.utils.OptionHelper.*
+import io.github.yoyama.wf.dag.*
 import io.github.yoyama.wf.db.model.running.{LinkRun, TaskRun, WorkflowRun, WorkflowRunAll}
 import io.github.yoyama.wf.repository.{Transaction, TransactionResult, TransactionRunner, WorkflowRunRepository}
 import io.github.yoyama.wf.{RunID, TaskID}
 
 import java.time.Instant
-import scala.util.control.Exception._
+import scala.util.control.Exception.*
 import scala.util.{Success, Try}
-
-import cats.implicits._
+import cats.implicits.*
+import io.github.yoyama.wf.tag.Tag
 
 case class TaskNotFoundException(id:TaskID) extends RuntimeException
 
@@ -58,12 +58,13 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
     for {
       tasks: Seq[WorkflowTask] <- tasksR.toList.traverse(convTask)
       links: Seq[(TaskID, TaskID)] <- convLink(linksR)
-      wf <- buildWorkflowDag(wfR.runId, wfR.name, tasks, links)
+      wfTag: Tag <- Tag.from(wfR.tags)
+      wf <- buildWorkflowDag(wfR.runId, wfR.name, tasks, links, tags = wfTag)
     } yield wf
   }
 
   // Build WorkflowDag from WorkflowTask and task link (from, to)
-  def buildWorkflowDag(id: RunID, name: String, wfTasks: Seq[WorkflowTask], pairs: Seq[(TaskID, TaskID)], tags: Map[String, String] = Map.empty): Try[WorkflowDag] = {
+  def buildWorkflowDag(id: RunID, name: String, wfTasks: Seq[WorkflowTask], pairs: Seq[(TaskID, TaskID)], tags: Tag): Try[WorkflowDag] = {
     def convLink(pairs: Seq[(TaskID, TaskID)]): Try[(LinkMap, LinkMap)] = {
       val ret = pairs.foldLeft((Map.empty[Int, Set[Int]], Map.empty[Int, Set[Int]])) { (acc, c) =>
         val (pLink: LinkMap, cLink: LinkMap) = acc

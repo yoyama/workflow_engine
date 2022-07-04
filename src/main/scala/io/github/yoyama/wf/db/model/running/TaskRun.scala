@@ -96,7 +96,7 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
     create(
       t.taskId, t.runId, t.name, t.`type`, t.config,
       t.state, t.inputParams, t.outputParams, t.systemParams, t.stateParams, t.nextPoll,
-      t.result, t.errCode, t.startAt, t.finishAt, t.tags, t.createdAt, t.updatedAt)
+      t.result, t.errCode, t.startAt, t.finishAt, t.tags)
   }
 
   def create(
@@ -115,9 +115,7 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
               errCode: Option[Int] = None,
               startAt: Option[Instant] = None,
               finishAt: Option[Instant] = None,
-              tags: Option[String] = None,
-              createdAt: Instant,
-              updatedAt: Instant)(implicit session: DBSession): TaskRun = {
+              tags: Option[String] = None)(implicit session: DBSession): TaskRun = {
     sql"""
       insert into ${TaskRun.table} (
         ${column.taskId},
@@ -154,31 +152,12 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
         ${errCode},
         ${startAt},
         ${finishAt},
-        ${tags},
-        ${createdAt},
-        ${updatedAt}
+        jsonb(${tags.getOrElse("{}")}),
+        now(),
+        now()
       )
       """.update.apply()
-
-    TaskRun(
-      taskId = taskId,
-      runId = runId,
-      name = name,
-      `type` = `type`,
-      config = config,
-      state = state,
-      inputParams = inputParams,
-      outputParams = outputParams,
-      systemParams = systemParams,
-      stateParams = stateParams,
-      nextPoll = nextPoll,
-      result = result,
-      errCode = errCode,
-      startAt = startAt,
-      finishAt = finishAt,
-      tags = tags,
-      createdAt = createdAt,
-      updatedAt = updatedAt)
+      find(taskId = taskId, runId = runId).get
   }
 
   def batchInsert(entities: collection.Seq[TaskRun])(implicit session: DBSession): List[Int] = {

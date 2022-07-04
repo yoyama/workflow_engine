@@ -2,6 +2,7 @@ package io.github.yoyama.wf.workflow
 
 import io.github.yoyama.wf.db.model.running.{LinkRun, TaskRun, WorkflowRun}
 import io.github.yoyama.wf.repository.{DatabaseWorkflowRunRepository, ScalikeJDBCTransactionRunner, Transaction, TransactionResult, TransactionRunner, WorkflowRunRepository}
+import io.github.yoyama.wf.tag.Tag
 import org.scalatest.flatspec.AnyFlatSpec
 import scalikejdbc.ConnectionPool
 
@@ -23,7 +24,7 @@ class WorkflowDagOpsTest extends AnyFlatSpec {
     )
     val links = Seq((0, 1), (1, -1))
 
-    val wf = wfops.buildWorkflowDag(99, "wf1", tasks, links)
+    val wf = wfops.buildWorkflowDag(99, "wf1", tasks, links, tags = Tag())
     println(wf.get.printInfo)
     assert(wf.isSuccess)
     assert(wf.get.id == 99)
@@ -46,7 +47,7 @@ class WorkflowDagOpsTest extends AnyFlatSpec {
     )
     val links = Seq((0, 1), (1, -1))
     val ret = for {
-      wfDag1 <- wfops.buildWorkflowDag(99, "wf1", tasks, links)
+      wfDag1 <- wfops.buildWorkflowDag(99, "wf1", tasks, links, tags = Tag())
       wfDag2 <- wfops.saveNewWorkflowDag(wfDag1)
     } yield wfDag2
     println(ret.get.printInfo)
