@@ -11,8 +11,8 @@ case class WorkflowRun(
   startAt: Option[Instant] = None,
   finishAt: Option[Instant] = None,
   tags: Option[String] = None,
-  createdAt: Instant,
-  updatedAt: Instant) {
+  createdAt: Instant = null,
+  updatedAt: Instant = null) {
 
   def save()(implicit session: DBSession): WorkflowRun = WorkflowRun.save(this)(session)
 
@@ -84,7 +84,6 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
     startAt: Option[Instant] = None,
     finishAt: Option[Instant] = None,
     tags: Option[String] = None)(implicit session: DBSession): WorkflowRun = {
-    println(s"YY tags: ${tags}")
     sql"""
       insert into ${WorkflowRun.table} (
         ${column.runId},

@@ -20,8 +20,8 @@ case class TaskRun(
                     startAt: Option[Instant] = None,
                     finishAt: Option[Instant] = None,
                     tags: Option[String] = None,
-                    createdAt: Instant,
-                    updatedAt: Instant) {
+                    createdAt: Instant = null,
+                    updatedAt: Instant = null) {
 
   def save()(implicit session: DBSession): TaskRun = TaskRun.save(this)(session)
 

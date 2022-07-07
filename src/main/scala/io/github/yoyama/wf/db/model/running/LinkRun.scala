@@ -7,7 +7,7 @@ case class LinkRun(
   runId: Int,
   parent: Int,
   child: Int,
-  createdAt: Instant) {
+  createdAt: Instant = null) {
 
   def save()(implicit session: DBSession): LinkRun = LinkRun.save(this)(session)
 
@@ -65,14 +65,13 @@ object LinkRun extends SQLSyntaxSupport[LinkRun] {
   }
 
   def create(l:LinkRun)(implicit session: DBSession): LinkRun = {
-    create(l.runId, l.parent, l.child, l.createdAt)(session)
+    create(l.runId, l.parent, l.child)(session)
   }
 
   def create(
     runId: Int,
     parent: Int,
-    child: Int,
-    createdAt: Instant)(implicit session: DBSession): LinkRun = {
+    child: Int)(implicit session: DBSession): LinkRun = {
     sql"""
       insert into ${LinkRun.table} (
         ${column.runId},
@@ -83,15 +82,10 @@ object LinkRun extends SQLSyntaxSupport[LinkRun] {
         ${runId},
         ${parent},
         ${child},
-        ${createdAt}
+        now()
       )
       """.update.apply()
-
-    LinkRun(
-      runId = runId,
-      parent = parent,
-      child = child,
-      createdAt = createdAt)
+    find(runId = runId, parent = parent, child = child).get
   }
 
   def batchInsert(entities: collection.Seq[LinkRun])(implicit session: DBSession): List[Int] = {
