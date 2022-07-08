@@ -39,7 +39,7 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
         name = tr.name,
         tType = tr.`type`,
         config = tr.config,
-        state = tr.state,
+        state = TaskState(tr.state),
         result = tr.result,
         errorCode = tr.errCode,
         startAt = tr.startAt,
@@ -85,7 +85,7 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
     def convCells(tasks: Seq[WorkflowTask]): Try[Map[TaskID, DagCell]] = {
       Success(
         tasks
-          .map(t => (t.id, DagCell(t.id, t.state, Instant.now())))
+          .map(t => (t.id, DagCell(t.id, t.state.value, Instant.now())))
           .toMap
       )
     }
@@ -103,7 +103,7 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
   def fetchNextTasks(wfDag: WorkflowDag, id: TaskID): Try[Seq[WorkflowTask]] = {
     val children = wfDag.getChildren(id)
     val readyChildren = children.filter(c => {
-      val parents = wfDag.getParents(c).filter(p => wfDag.getTask(p).get.state != 99)
+      val parents = wfDag.getParents(c).filter(p => wfDag.getTask(p).get.state != TaskState.STOP)
       parents.size == 0 // check, the child of all parents are in stop state)
     })
     val tasks: Seq[Try[WorkflowTask]] = readyChildren.map(id => wfDag.getTask(id).toTry(TaskNotFoundException(id)))
@@ -111,7 +111,7 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
   }
 
   def updateTaskStates(wfDag: WorkflowDag, ids: Seq[TaskID], state: Int): Try[WorkflowDag] = {
-    
+
     ???
   }
 
@@ -164,7 +164,7 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
         name = wfTask.name,
         `type` = wfTask.tType,
         config = wfTask.config,
-        state = wfTask.state,
+        state = wfTask.state.value,
         result = wfTask.result,
         errCode = wfTask.errorCode,
         startAt = wfTask.startAt,
