@@ -145,7 +145,7 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
       WorkflowRun(
         runId = wfDag.id,
         name = wfDag.name,
-        state = wfDag.state,
+        state = wfDag.state.value,
         startAt = wfDag.startAt,
         finishAt = wfDag.finishAt,
         tags = Some(wfDag.tags.toString()), // ToDo
