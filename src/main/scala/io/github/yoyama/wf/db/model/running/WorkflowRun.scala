@@ -1,6 +1,7 @@
 package io.github.yoyama.wf.db.model.running
 
-import scalikejdbc._
+import io.github.yoyama.wf.RunID
+import scalikejdbc.*
 
 import java.time.Instant
 
@@ -164,4 +165,7 @@ object WorkflowRun extends SQLSyntaxSupport[WorkflowRun] {
     sql"""delete from ${WorkflowRun.table} where ${column.runId} = ${entity.runId}""".update.apply()
   }
 
+  def updateState(runId:RunID, state:Int)(implicit session: DBSession): Int = {
+    sql"""update ${WorkflowRun.table} set state = ${state}, updated_at = now where run_id = ${runId}""".update.apply()
+  }
 }

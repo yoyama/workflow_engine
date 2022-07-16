@@ -1,6 +1,8 @@
 package io.github.yoyama.wf.db.model.running
 
-import scalikejdbc._
+import io.github.yoyama.wf.{RunID, TaskID}
+import scalikejdbc.*
+
 import java.time.Instant
 
 case class TaskRun(
@@ -268,4 +270,9 @@ object TaskRun extends SQLSyntaxSupport[TaskRun] {
            where run_id = ${entity.runId} and task_id = ${entity.taskId}
            """.update.apply()
   }
+
+  def updateState(runId:RunID, taskId:TaskID, state:Int)(implicit session: DBSession): Int = {
+    sql"""update ${TaskRun.table} set state = ${state}, updated_at = now() where run_id = ${runId} and task_id = ${taskId}""".update.apply()
+  }
+
 }

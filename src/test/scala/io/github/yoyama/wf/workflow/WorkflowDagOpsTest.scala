@@ -98,5 +98,35 @@ class WorkflowDagOpsTest extends AnyFlatSpec {
       }
     }
   }
+
+  "updateTasksState" should "work" in {
+    val tasks = Seq(
+      WorkflowTask(0, 99, "root", "nop", "{}", state = TaskState.READY ,createdAt = null, updatedAt = null),
+      WorkflowTask(-1, 99, "terminal", "nop", "{}", state = TaskState.WAIT, createdAt = null, updatedAt = null),
+      WorkflowTask(1, 99, "task1", "nop", "{}", state = TaskState.WAIT, createdAt = null, updatedAt = null),
+      WorkflowTask(2, 99, "task2", "nop", "{}", state = TaskState.WAIT, createdAt = null, updatedAt = null),
+      WorkflowTask(3, 99, "task3", "nop", "{}", state = TaskState.WAIT, createdAt = null, updatedAt = null),
+    )
+    val links = Seq((0,1), (0,2), (1,3), (2,3),(3, -1))
+    val tag = Tag.from("""{ "type" : "normal" } """).get
+    val ret = for {
+      wfDag1 <- wfops.buildWorkflowDag(99, "wf1", tasks, links, tags = tag)
+      dag1 <- wfops.saveNewWorkflowDag(wfDag1)
+      dag2 <- wfops.updateTasksState(dag1, Seq(0), TaskState.STOP)
+      dag3 <- wfops.updateTasksState(dag2, Seq(1, 2), TaskState.RUNNING)
+    } yield dag3
+    ret match {
+      case Failure(e) => fail(e)
+      case Success(dag) =>
+        println(dag)
+        assert(dag.getTask(0).get.state == TaskState.STOP)
+        assert(dag.getTask(1).get.state == TaskState.RUNNING)
+        assert(dag.getTask(2).get.state == TaskState.RUNNING)
+        assert(dag.getTask(3).get.state == TaskState.WAIT)
+        assert(dag.getTask(-1).get.state == TaskState.WAIT)
+    }
+  }
+
+
 }
 

@@ -20,6 +20,9 @@ trait WorkflowRunRepository() {
   
   def deleteLinkRun(runId:Int):Transaction[Int]
   def deleteTaskRun(runId:Int):Transaction[Int]
+
+  def updateWorkflowRunState(runId:Int, state:Int):Transaction[WorkflowRun]
+  def updateTaskRunState(runId:Int, taskId:Int, state:Int):Transaction[TaskRun]
 }
 
 

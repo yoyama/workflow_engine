@@ -1,10 +1,12 @@
 package io.github.yoyama.wf.repository
 
 import cats.Applicative
+import cats.Monad
 
 import scala.util.{Failure, Success, Try}
 
 case class TransactionResult[A](v:Either[Throwable,A]) {}
+
 
 trait Transaction[A] { self =>
   def pure[A](x:A): Transaction[A]
@@ -40,7 +42,7 @@ case class ScalikeJDBCTransaction[A](execute: DBSession => Either[Throwable,A]) 
 }
 
 object ScalikeJDBCTransaction {
-  import cats.Applicative
+  //import cats.Applicative
   def from[A](execute: DBSession => A): ScalikeJDBCTransaction[A] = {
     val exec = (session: DBSession) => {
       Try {
@@ -70,6 +72,21 @@ object ScalikeJDBCTransaction {
       ret.asInstanceOf[ScalikeJDBCTransaction[B]]
     }
   }
+
+  /**
+  implicit val monad: Monad[ScalikeJDBCTransaction] = new Monad[ScalikeJDBCTransaction] {
+    override def pure[A](x: A): ScalikeJDBCTransaction[A] = {
+      ScalikeJDBCTransaction.from(x)
+    }
+    override def flatMap[A, B](fa: ScalikeJDBCTransaction[A])(f: A => ScalikeJDBCTransaction[B]): ScalikeJDBCTransaction[B] = {
+      fa.flatMap(f).asInstanceOf[ScalikeJDBCTransaction[B]]
+    }
+
+    override def tailRecM[A, B](a: A)(f: A => ScalikeJDBCTransaction[Either[A, B]]): ScalikeJDBCTransaction[B] = {
+      ???
+    }
+  }
+  */
 }
 
 class ScalikeJDBCTransactionRunner extends TransactionRunner {

@@ -3,8 +3,8 @@ package io.github.yoyama.wf.workflow
 import io.github.yoyama.utils.OptionHelper.*
 import io.github.yoyama.wf.dag.*
 import io.github.yoyama.wf.db.model.running.{LinkRun, TaskRun, WorkflowRun, WorkflowRunAll}
-import io.github.yoyama.wf.repository.{Transaction, TransactionResult, TransactionRunner, WorkflowRunRepository}
-import io.github.yoyama.wf.{RunID, TaskID}
+import io.github.yoyama.wf.repository.{ScalikeJDBCTransaction, Transaction, TransactionResult, TransactionRunner, WorkflowRunRepository}
+import io.github.yoyama.wf.{RunID, TaskID, repository}
 
 import java.time.Instant
 import scala.util.control.Exception.*
@@ -30,25 +30,28 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
     } yield wf
   }
 
+  def toWorkflowTask(tr:TaskRun): Try[WorkflowTask] = {
+    for {
+      tags <- Tag.from(tr.tags)
+    } yield WorkflowTask(
+      id = tr.taskId,
+      runId = tr.runId,
+      name = tr.name,
+      tType = tr.`type`,
+      config = tr.config,
+      state = TaskState(tr.state),
+      result = tr.result,
+      errorCode = tr.errCode,
+      startAt = tr.startAt,
+      finishAt = tr.finishAt,
+      createdAt = tr.createdAt,
+      updatedAt = tr.updatedAt,
+      tags = tags
+    )
+  }
+
   // Build WorkflowDag from model data
   def buildWorkflowDag(wfR: WorkflowRun, tasksR: Seq[TaskRun], linksR: Seq[LinkRun]): Try[WorkflowDag] = {
-    def convTask(tr: TaskRun): Try[WorkflowTask] = {
-      Success(WorkflowTask(
-        id = tr.taskId,
-        runId = tr.runId,
-        name = tr.name,
-        tType = tr.`type`,
-        config = tr.config,
-        state = TaskState(tr.state),
-        result = tr.result,
-        errorCode = tr.errCode,
-        startAt = tr.startAt,
-        finishAt = tr.finishAt,
-        createdAt = tr.createdAt,
-        updatedAt = tr.updatedAt
-        //ToDo tags
-      ))
-    }
 
     def convLink(lr: Seq[LinkRun]): Try[Seq[(TaskID, TaskID)]] = {
       val ret = lr.map(l => (l.parent, l.child))
@@ -56,7 +59,7 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
     }
 
     for {
-      tasks: Seq[WorkflowTask] <- tasksR.toList.traverse(convTask)
+      tasks: Seq[WorkflowTask] <- tasksR.toList.traverse(toWorkflowTask)
       links: Seq[(TaskID, TaskID)] <- convLink(linksR)
       wfTag: Tag <- Tag.from(wfR.tags)
       wf <- buildWorkflowDag(wfR.runId, wfR.name, tasks, links, tags = wfTag)
@@ -110,9 +113,33 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
     tasks.sequence // convert Seq[Try[_]} to Try[Seq[_]] by cats
   }
 
-  def updateTaskStates(wfDag: WorkflowDag, ids: Seq[TaskID], state: Int): Try[WorkflowDag] = {
+  def updateTasksState(wfDag: WorkflowDag, ids: Seq[TaskID], state: TaskState): Try[WorkflowDag] = {
+    val tasks: Seq[Transaction[TaskRun]] = ids.map(id => wfRepo.updateTaskRunState(wfDag.id, id, state.value))
+    val t: Transaction[List[TaskRun]] = tasks.map(_.asInstanceOf[ScalikeJDBCTransaction[TaskRun]]).toList.traverse(identity)
+    for {
+      taskRuns <- t.run.v.toTry
+      wfTasks <- taskRuns.traverse(toWorkflowTask)
+      newDag <- replaceWorkflowTasks(wfDag, wfTasks)
+    } yield newDag
+  }
 
+  private def replaceWorkflowTasks(wfDag: WorkflowDag, newTasks:Seq[WorkflowTask]): Try[WorkflowDag] = {
+    for {
+      _   <- newTasks.map(_.id).traverse(wfDag.getTask).toTry(s"""Invalid tasks: ${newTasks}""")
+      updated <- catching(classOf[RuntimeException]) withTry {
+        newTasks.foldLeft(wfDag) { (dag, task) =>
+          dag.copy(tasks = dag.tasks.updated(task.id, task))
+        }
+      }
+    } yield updated
+  }
+
+  def updateWorkflowState(wfDag: WorkflowDag, state: WorkflowState): Try[WorkflowDag] = {
     ???
+  }
+
+  def startWorkflow(wfDag:WorkflowDag): Try[WorkflowDag] = {
+    updateWorkflowState(wfDag, WorkflowState.READY)
   }
 
   def runNextTasks(wfDag: WorkflowDag): Try[(WorkflowDag, Seq[WorkflowTask])] = {

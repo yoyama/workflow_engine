@@ -2,11 +2,11 @@ package io.github.yoyama.wf.repository
 
 import io.github.yoyama.wf.db.model.running.{LinkRun, TaskRun, WorkflowRun}
 import io.github.yoyama.wf.db.model.running.WorkflowRunAll
-import cats._
-import cats.implicits._
+import cats.*
+import cats.implicits.*
 import io.github.yoyama.wf.db.model.running
-import scalikejdbc._
-import scalikejdbc.config._
+import scalikejdbc.*
+import scalikejdbc.config.*
 
 class DatabaseWorkflowRunRepository extends WorkflowRunRepository {
   def getWorkflowRunAll(runId: Int): Transaction[WorkflowRunAll] = {
@@ -49,13 +49,13 @@ class DatabaseWorkflowRunRepository extends WorkflowRunRepository {
   def saveNewWorkflowRunAll(wfa: WorkflowRunAll, runId: Option[Int] = None): Transaction[WorkflowRunAll] = {
     for {
       runId2 <- runId.map(i => ScalikeJDBCTransaction.from(i)).getOrElse(assignNewRunId())
-      wf2 <- ScalikeJDBCTransaction.from(ss => {
+      wf2: WorkflowRun <- ScalikeJDBCTransaction.from(ss => {
         WorkflowRun.create(wfa.wf.copy(runId = runId2))(ss)
       })
-      tasks2 <- wfa.tasks
+      tasks2:List[TaskRun] <- wfa.tasks
         .map(t => ScalikeJDBCTransaction.from(ss =>  TaskRun.create(t.copy(runId = runId2))(ss)))
         .toList.traverse(identity)
-      links2 <- wfa.links
+      links2:List[LinkRun] <- wfa.links
         .map(l => ScalikeJDBCTransaction.from(ss => LinkRun.create(l.copy(runId = runId2))(ss)))
         .toList.traverse(identity)
     } yield WorkflowRunAll(wf2, tasks2, links2)
@@ -98,4 +98,21 @@ class DatabaseWorkflowRunRepository extends WorkflowRunRepository {
       sql"""delete from running.task_run where run_id = ${runId}""".update.apply()
     }
   }
+
+  def updateWorkflowRunState(runId:Int, state:Int):Transaction[WorkflowRun] = {
+    ScalikeJDBCTransaction.from { (session: DBSession) =>
+      implicit val s = session
+      WorkflowRun.updateState(runId, state)
+      WorkflowRun.find(runId).get
+    }
+  }
+
+  def updateTaskRunState(runId:Int, taskId:Int, state:Int):Transaction[TaskRun] = {
+    ScalikeJDBCTransaction.from { (session: DBSession) =>
+      implicit val s = session
+      TaskRun.updateState(runId = runId, taskId = taskId, state)
+      TaskRun.find(taskId = taskId, runId = runId).get
+    }
+  }
+
 }
