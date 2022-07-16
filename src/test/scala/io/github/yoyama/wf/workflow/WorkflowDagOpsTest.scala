@@ -26,7 +26,7 @@ class WorkflowDagOpsTest extends AnyFlatSpec {
     )
     val links = Seq((0, 1), (1, -1))
 
-    val wf = wfops.buildWorkflowDag(99, "wf1", tasks, links, tags = Tag())
+    val wf = wfops.wfBuilder.buildWorkflowDag(99, "wf1", tasks, links, tags = Tag())
     println(wf.get.printInfo)
     assert(wf.isSuccess)
     assert(wf.get.id == 99)
@@ -52,7 +52,7 @@ class WorkflowDagOpsTest extends AnyFlatSpec {
     val links = Seq((0,1), (0,2), (1,3), (2,3),(3, -1))
     val tag = Tag.from("""{ "type" : "normal" } """).get
     val ret = for {
-      wfDag1 <- wfops.buildWorkflowDag(99, "wf1", tasks, links, tags = tag)
+      wfDag1 <- wfops.wfBuilder.buildWorkflowDag(99, "wf1", tasks, links, tags = tag)
       dag <- wfops.saveNewWorkflowDag(wfDag1)
     } yield dag
     ret match {
@@ -86,7 +86,7 @@ class WorkflowDagOpsTest extends AnyFlatSpec {
     )
     val ret = for {
       savedWf <- wfRepo.saveNewWorkflowRunAll(wfa).run.v.toTry
-      loadWf <- wfops.loadWorkflowDag(savedWf.wf.runId)
+      loadWf <- wfops.wfBuilder.loadWorkflowDag(savedWf.wf.runId)
     } yield loadWf
     ret match {
       case Failure(e) => fail(e)
@@ -110,7 +110,7 @@ class WorkflowDagOpsTest extends AnyFlatSpec {
     val links = Seq((0,1), (0,2), (1,3), (2,3),(3, -1))
     val tag = Tag.from("""{ "type" : "normal" } """).get
     val ret = for {
-      wfDag1 <- wfops.buildWorkflowDag(99, "wf1", tasks, links, tags = tag)
+      wfDag1 <- wfops.wfBuilder.buildWorkflowDag(99, "wf1", tasks, links, tags = tag)
       dag1 <- wfops.saveNewWorkflowDag(wfDag1)
       dag2 <- wfops.updateTasksState(dag1, Seq(0), TaskState.STOP)
       dag3 <- wfops.updateTasksState(dag2, Seq(1, 2), TaskState.RUNNING)
