@@ -8,7 +8,7 @@ import io.github.yoyama.wf.{RunID, TaskID, repository}
 
 import java.time.Instant
 import scala.util.control.Exception.*
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 import cats.implicits.*
 import io.github.yoyama.wf.tag.Tag
 
@@ -17,7 +17,7 @@ case class TaskNotFoundException(id:TaskID) extends RuntimeException
 class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:TransactionRunner) { //extends DagOps {
   val wfBuilder = new WorkflowDagBuilder(wfRepo)(tRunner)
 
-  def fetchNextTasks(wfDag: WorkflowDag, id: TaskID): Try[Seq[WorkflowTask]] = {
+  protected def fetchNextTasks(wfDag: WorkflowDag, id: TaskID): Try[Seq[WorkflowTask]] = {
     val children = wfDag.getChildren(id)
     val readyChildren = children.filter(c => {
       val parents = wfDag.getParents(c).filter(p => wfDag.getTask(p).get.state != TaskState.STOP)
@@ -25,6 +25,21 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
     })
     val tasks: Seq[Try[WorkflowTask]] = readyChildren.map(id => wfDag.getTask(id).toTry(TaskNotFoundException(id)))
     tasks.sequence // convert Seq[Try[_]} to Try[Seq[_]] by cats
+  }
+
+  protected def finishSuccessfully(wfDag: WorkflowDag, id:TaskID): Boolean = {
+    val task = wfDag.getTask(id).get
+    task.state == TaskState.STOP && task.result == TaskResult.SUCCESS
+  }
+
+  protected def beReady(wfDag: WorkflowDag, id:TaskID): Try[Boolean] = {
+    for {
+      task: WorkflowTask <- wfDag.getTask(id).toTry(s"No task: ${id}")
+      _ <- if (task.state == TaskState.WAIT) Success(task) else Failure(InvalidTaskState(s"""The task ${id} is not in state WAIT"""))
+      parents <- Success(wfDag.getParents(id))
+      notStopParents <- catching(classOf[RuntimeException]) withTry parents.filter(p => !finishSuccessfully(wfDag, p)
+      )
+    } yield notStopParents.size == 0
   }
 
   def updateTasksState(wfDag: WorkflowDag, ids: Seq[TaskID], state: TaskState): Try[WorkflowDag] = {
@@ -37,7 +52,7 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
     } yield newDag
   }
 
-  private def replaceWorkflowTasks(wfDag: WorkflowDag, newTasks:Seq[WorkflowTask]): Try[WorkflowDag] = {
+  protected def replaceWorkflowTasks(wfDag: WorkflowDag, newTasks:Seq[WorkflowTask]): Try[WorkflowDag] = {
     for {
       _   <- newTasks.map(_.id).traverse(wfDag.getTask).toTry(s"""Invalid tasks: ${newTasks}""")
       updated <- catching(classOf[RuntimeException]) withTry {
@@ -56,19 +71,29 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
     updateWorkflowState(wfDag, WorkflowState.READY)
   }
 
-  def runNextTasks(wfDag: WorkflowDag): Try[(WorkflowDag, Seq[WorkflowTask])] = {
-    ???
+  def runNextTasks(wfDag: WorkflowDag, id:TaskID): Try[(WorkflowDag, Seq[WorkflowTask])] = {
+    for {
+      tasks <- fetchNextTasks(wfDag, id)
+      updatedDag <- updateTasksState(wfDag, tasks.map(_.id), TaskState.READY)
+      updatedTasks <- tasks.map(t => updatedDag.getTask(t.id).toTry(TaskNotFoundException(t.id))).toList.sequence
+    } yield (updatedDag, updatedTasks)
   }
 
-  def saveNewWorkflowDag(wfDag: WorkflowDag): Try[WorkflowDag] = {
+  /**
+   * Submit new Workflow
+   * @param wfDag
+   * @return
+   */
+  def submitWorkflowDag(wfDag: WorkflowDag): Try[WorkflowDag] = {
     for {
+      //ToDo validate wfDag: state, dag validation
       runAll <- toWorkflowRunAll(wfDag)
       newRunAll <- wfRepo.saveNewWorkflowRunAll(runAll, None).run.v.toTry
       newWfDag <- wfBuilder.loadWorkflowDag(newRunAll.wf.runId)
     } yield newWfDag
   }
 
-  def toWorkflowRunAll(wfDag: WorkflowDag): Try[WorkflowRunAll] = {
+  private def toWorkflowRunAll(wfDag: WorkflowDag): Try[WorkflowRunAll] = {
     import cats.implicits._
     for {
       wf <- toWorkflowRun(wfDag)
@@ -81,7 +106,7 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
     )
   }
 
-  def toWorkflowRun(wfDag: WorkflowDag): Try[WorkflowRun] = {
+  private def toWorkflowRun(wfDag: WorkflowDag): Try[WorkflowRun] = {
     val ret = catching(classOf[RuntimeException]) either {
       WorkflowRun(
         runId = wfDag.id,
@@ -97,7 +122,7 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
     ret.toTry
   }
 
-  def toTaskRun(wfTask: WorkflowTask): Try[TaskRun] = {
+  private def toTaskRun(wfTask: WorkflowTask): Try[TaskRun] = {
     val ret: Either[Throwable, TaskRun] = catching(classOf[RuntimeException]) either {
       TaskRun(
         taskId = wfTask.id,
@@ -106,7 +131,7 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
         `type` = wfTask.tType,
         config = wfTask.config,
         state = wfTask.state.value,
-        result = wfTask.result,
+        result = TaskResult.toValue(wfTask.result),
         errCode = wfTask.errorCode,
         startAt = wfTask.startAt,
         finishAt = wfTask.finishAt,
@@ -118,7 +143,7 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
     ret.toTry
   }
 
-  def toLinkRun(wfDag: WorkflowDag): Try[Seq[LinkRun]] = {
+  private def toLinkRun(wfDag: WorkflowDag): Try[Seq[LinkRun]] = {
     val ret = catching(classOf[RuntimeException]) either {
       val p2c: Seq[(Int, Int)] = wfDag.dag.children.toList.flatMap(x => x._2.map((x._1, _)))
       p2c.map(x => LinkRun(runId = wfDag.id, parent = x._1, child = x._2, createdAt = Instant.now()))

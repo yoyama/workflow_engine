@@ -37,7 +37,7 @@ class WorkflowDagBuilder (val wfRepo:WorkflowRunRepository)(implicit val tRunner
       tType = tr.`type`,
       config = tr.config,
       state = TaskState(tr.state),
-      result = tr.result,
+      result = TaskResult(tr.result),
       errorCode = tr.errCode,
       startAt = tr.startAt,
       finishAt = tr.finishAt,
