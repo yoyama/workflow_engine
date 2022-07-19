@@ -17,6 +17,60 @@ case class TaskNotFoundException(id:TaskID) extends RuntimeException
 class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:TransactionRunner) { //extends DagOps {
   val wfBuilder = new WorkflowDagBuilder(wfRepo)(tRunner)
 
+  /**
+   * Submit new Workflow
+   * @param wfDag
+   * @return
+   */
+  def submitWorkflowDag(wfDag: WorkflowDag): Try[WorkflowDag] = {
+    for {
+      //ToDo validate wfDag: state, dag validation
+      runAll <- toWorkflowRunAll(wfDag)
+      newRunAll <- wfRepo.saveNewWorkflowRunAll(runAll, None).run.v.toTry
+      newWfDag <- wfBuilder.loadWorkflowDag(newRunAll.wf.runId)
+    } yield newWfDag
+  }
+
+  def startWorkflow(wfDag:WorkflowDag): Try[WorkflowDag] = {
+    //ToDo check state
+    updateWorkflowState(wfDag, WorkflowState.READY)
+  }
+
+  def runNextTasks(wfDag: WorkflowDag, id:TaskID): Try[(WorkflowDag, Seq[WorkflowTask])] = {
+    for {
+      tasks <- fetchNextTasks(wfDag, id)
+      updatedDag <- updateTaskState(wfDag, tasks.map(_.id), TaskState.READY)
+      updatedTasks <- tasks.map(t => updatedDag.getTask(t.id).toTry(TaskNotFoundException(t.id))).toList.sequence
+    } yield (updatedDag, updatedTasks)
+  }
+
+  def cancelWorkflow(wfDag:WorkflowDag): Try[WorkflowDag] = {
+    ???
+  }
+
+  def finishWorkflow(wfDag:WorkflowDag): Try[WorkflowDag] = {
+    ???
+  }
+
+  def finishWorkflowByForce(wfDag:WorkflowDag): Try[WorkflowDag] = {
+    ???
+  }
+
+  def updateWorkflowState(wfDag: WorkflowDag, state: WorkflowState): Try[WorkflowDag] = {
+    ???
+  }
+
+  def updateTaskState(wfDag: WorkflowDag, ids: Seq[TaskID], state: TaskState): Try[WorkflowDag] = {
+    val tasks: Seq[Transaction[TaskRun]] = ids.map(id => wfRepo.updateTaskRunState(wfDag.id, id, state.value))
+    val t: Transaction[List[TaskRun]] = tasks.map(_.asInstanceOf[ScalikeJDBCTransaction[TaskRun]]).toList.traverse(identity)
+    for {
+      taskRuns <- t.run.v.toTry
+      wfTasks <- taskRuns.traverse(wfBuilder.toWorkflowTask)
+      newDag <- replaceWorkflowTasks(wfDag, wfTasks)
+    } yield newDag
+  }
+
+
   protected def fetchNextTasks(wfDag: WorkflowDag, id: TaskID): Try[Seq[WorkflowTask]] = {
     val children = wfDag.getChildren(id)
     val readyChildren = children.filter(c => {
@@ -42,16 +96,6 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
     } yield notStopParents.size == 0
   }
 
-  def updateTasksState(wfDag: WorkflowDag, ids: Seq[TaskID], state: TaskState): Try[WorkflowDag] = {
-    val tasks: Seq[Transaction[TaskRun]] = ids.map(id => wfRepo.updateTaskRunState(wfDag.id, id, state.value))
-    val t: Transaction[List[TaskRun]] = tasks.map(_.asInstanceOf[ScalikeJDBCTransaction[TaskRun]]).toList.traverse(identity)
-    for {
-      taskRuns <- t.run.v.toTry
-      wfTasks <- taskRuns.traverse(wfBuilder.toWorkflowTask)
-      newDag <- replaceWorkflowTasks(wfDag, wfTasks)
-    } yield newDag
-  }
-
   protected def replaceWorkflowTasks(wfDag: WorkflowDag, newTasks:Seq[WorkflowTask]): Try[WorkflowDag] = {
     for {
       _   <- newTasks.map(_.id).traverse(wfDag.getTask).toTry(s"""Invalid tasks: ${newTasks}""")
@@ -61,36 +105,6 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
         }
       }
     } yield updated
-  }
-
-  def updateWorkflowState(wfDag: WorkflowDag, state: WorkflowState): Try[WorkflowDag] = {
-    ???
-  }
-
-  def startWorkflow(wfDag:WorkflowDag): Try[WorkflowDag] = {
-    updateWorkflowState(wfDag, WorkflowState.READY)
-  }
-
-  def runNextTasks(wfDag: WorkflowDag, id:TaskID): Try[(WorkflowDag, Seq[WorkflowTask])] = {
-    for {
-      tasks <- fetchNextTasks(wfDag, id)
-      updatedDag <- updateTasksState(wfDag, tasks.map(_.id), TaskState.READY)
-      updatedTasks <- tasks.map(t => updatedDag.getTask(t.id).toTry(TaskNotFoundException(t.id))).toList.sequence
-    } yield (updatedDag, updatedTasks)
-  }
-
-  /**
-   * Submit new Workflow
-   * @param wfDag
-   * @return
-   */
-  def submitWorkflowDag(wfDag: WorkflowDag): Try[WorkflowDag] = {
-    for {
-      //ToDo validate wfDag: state, dag validation
-      runAll <- toWorkflowRunAll(wfDag)
-      newRunAll <- wfRepo.saveNewWorkflowRunAll(runAll, None).run.v.toTry
-      newWfDag <- wfBuilder.loadWorkflowDag(newRunAll.wf.runId)
-    } yield newWfDag
   }
 
   private def toWorkflowRunAll(wfDag: WorkflowDag): Try[WorkflowRunAll] = {

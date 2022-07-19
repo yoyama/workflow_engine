@@ -112,8 +112,8 @@ class WorkflowDagOpsTest extends AnyFlatSpec {
     val ret = for {
       wfDag1 <- wfops.wfBuilder.buildWorkflowDag(99, "wf1", tasks, links, tags = tag)
       dag1 <- wfops.submitWorkflowDag(wfDag1)
-      dag2 <- wfops.updateTasksState(dag1, Seq(0), TaskState.STOP)
-      dag3 <- wfops.updateTasksState(dag2, Seq(1, 2), TaskState.RUNNING)
+      dag2 <- wfops.updateTaskState(dag1, Seq(0), TaskState.STOP)
+      dag3 <- wfops.updateTaskState(dag2, Seq(1, 2), TaskState.RUNNING)
     } yield dag3
     ret match {
       case Failure(e) => fail(e)
