@@ -72,8 +72,8 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
 
 
   protected def fetchNextTasks(wfDag: WorkflowDag, id: TaskID): Try[Seq[WorkflowTask]] = {
-    val children = wfDag.getChildren(id)
-    val readyChildren = children.filter(c => {
+    val waitChildren = wfDag.getChildren(id).filter(id => wfDag.getTask(id).get.state == TaskState.WAIT)
+    val readyChildren = waitChildren.filter(c => {
       val parents = wfDag.getParents(c).filter(p => wfDag.getTask(p).get.state != TaskState.STOP)
       parents.size == 0 // check, the child of all parents are in stop state)
     })

@@ -127,6 +127,47 @@ class WorkflowDagOpsTest extends AnyFlatSpec {
     }
   }
 
-
+  "runNextTasks" should "work" in {
+    val tasks = Seq(
+      WorkflowTask(0, 99, "root", "nop", "{}", state = TaskState.READY, createdAt = null, updatedAt = null),
+      WorkflowTask(-1, 99, "terminal", "nop", "{}", state = TaskState.WAIT, createdAt = null, updatedAt = null),
+      WorkflowTask(1, 99, "task1", "nop", "{}", state = TaskState.WAIT, createdAt = null, updatedAt = null),
+      WorkflowTask(2, 99, "task2", "nop", "{}", state = TaskState.WAIT, createdAt = null, updatedAt = null),
+      WorkflowTask(3, 99, "task3", "nop", "{}", state = TaskState.WAIT, createdAt = null, updatedAt = null),
+    )
+    val links = Seq((0, 1), (0, 2), (1, 3), (2, 3), (3, -1))
+    val tag = Tag.from("""{ "type" : "normal" } """).get
+    val ret = for {
+      wfDag1 <- wfops.wfBuilder.buildWorkflowDag(99, "wf1", tasks, links, tags = tag)
+      dag1 <- wfops.submitWorkflowDag(wfDag1)
+      (dag2, tasks2) <- wfops.runNextTasks(dag1, 0)
+      dag3 <- wfops.updateTaskState(dag2, Seq(0), TaskState.STOP)
+      (dag4, tasks4) <- wfops.runNextTasks(dag3, 0)
+      dag5 <- wfops.updateTaskState(dag2, Seq(1,2), TaskState.STOP)
+      (dag6, tasks6) <- wfops.runNextTasks(dag5, 1)
+      (dag7, tasks7) <- wfops.runNextTasks(dag6, 2)
+      _ <- {
+        println("before finish task 0:" + tasks2)
+        assert(tasks2.size == 0)
+        Success(true)
+      }
+      _ <- {
+        println("after finish task 0:" + tasks4)
+        assert(tasks4.size == 2)
+        Success(true)
+      }
+      _ <- {
+        println("after finish task1,2: " + tasks6)
+        assert(tasks6.size == 1)
+        Success(true)
+      }
+      _ <- {
+        println("after finish task1,2 and already updated: " + tasks7)
+        assert(tasks7.size == 0)
+        Success(true)
+      }
+    } yield dag7
+    println(ret)
+  }
 }
 
