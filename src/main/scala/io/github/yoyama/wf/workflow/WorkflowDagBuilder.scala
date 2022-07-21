@@ -99,4 +99,19 @@ class WorkflowDagBuilder (val wfRepo:WorkflowRunRepository)(implicit val tRunner
       id2wftasks <- Success(wfTasks.map(t => (t.id, t)).toMap)
     } yield WorkflowDag(id, name, dag, id2wftasks, tags = tags)
   }
+
+  def updateWorkflowDag(wfDag:WorkflowDag, wfRun:WorkflowRun):Try[WorkflowDag] = {
+    for {
+      tags <- Tag.from(wfRun.tags)
+      newDag <- Try(wfDag.copy(
+        name = wfRun.name,
+        state = WorkflowState(wfRun.state),
+        startAt = wfRun.startAt,
+        finishAt = wfRun.finishAt,
+        updatedAt = Option(wfRun.updatedAt),
+        createdAt = Option(wfRun.createdAt),
+        tags = tags
+      ))
+    } yield newDag
+  }
 }

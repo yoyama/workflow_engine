@@ -57,12 +57,15 @@ class WorkflowDagOps(val wfRepo:WorkflowRunRepository)(implicit val tRunner:Tran
   }
 
   def updateWorkflowState(wfDag: WorkflowDag, state: WorkflowState): Try[WorkflowDag] = {
-    ???
+    for {
+      wfRun <- wfRepo.updateWorkflowRunState(wfDag.id, state.value).run.v.toTry
+      newDag <- wfBuilder.updateWorkflowDag(wfDag, wfRun)
+    } yield newDag
   }
 
   def updateTaskState(wfDag: WorkflowDag, ids: Seq[TaskID], state: TaskState): Try[WorkflowDag] = {
     val tasks: Seq[Transaction[TaskRun]] = ids.map(id => wfRepo.updateTaskRunState(wfDag.id, id, state.value))
-    val t: Transaction[List[TaskRun]] = tasks.map(_.asInstanceOf[ScalikeJDBCTransaction[TaskRun]]).toList.traverse(identity)
+    val t: Transaction[List[TaskRun]] = tasks.map(_.asInstanceOf[ScalikeJDBCTransaction[TaskRun]]).toList.sequence
     for {
       taskRuns <- t.run.v.toTry
       wfTasks <- taskRuns.traverse(wfBuilder.toWorkflowTask)

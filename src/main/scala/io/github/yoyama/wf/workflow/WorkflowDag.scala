@@ -10,6 +10,7 @@ enum WorkflowState(val value:Int) {
   case WAIT extends WorkflowState(0)
   case READY extends WorkflowState(1)
   case RUNNING extends WorkflowState(21)
+  case CANCELLING extends WorkflowState(98)
   case STOPPING extends WorkflowState(98)
   case STOP extends WorkflowState(99)
 }
@@ -19,6 +20,7 @@ object WorkflowState {
     case 0 => WAIT
     case 1 => READY
     case 21 => RUNNING
+    case 91 => CANCELLING
     case 98 => STOPPING
     case 99 => STOP
     case _ => throw new RuntimeException(s"Invalid workflow state value:${v}")
