@@ -16,31 +16,35 @@ class WorkflowDagBuilderTest extends AnyFlatSpec {
 
   implicit val tRunner:TransactionRunner = new ScalikeJDBCTransactionRunner()
   val wfRepo = new DatabaseWorkflowRunRepository
-  val wfbuilder = new WorkflowDagBuilder(wfRepo)
+  val wfBuilder = new WorkflowDagBuilder(wfRepo)
+
+  val testTasks = Seq(
+    WorkflowTask(0, 99, "root", "nop", "{}", state = TaskState.READY, createdAt = null, updatedAt = null),
+    WorkflowTask(-1, 99, "terminal", "nop", "{}", state = TaskState.WAIT, createdAt = null, updatedAt = null),
+    WorkflowTask(1, 99, "task1", "nop", "{}", state = TaskState.WAIT, createdAt = null, updatedAt = null),
+    WorkflowTask(2, 99, "task2", "nop", "{}", state = TaskState.WAIT, createdAt = null, updatedAt = null),
+    WorkflowTask(3, 99, "task3", "nop", "{}", state = TaskState.WAIT, createdAt = null, updatedAt = null),
+  )
+  val testLinks = Seq((0, 1), (0, 2), (1, 3), (2, 3), (3, -1))
+  val testTag = Tag.from("""{ "type" : "normal" } """).get
 
   "buildWorkflowDag from WorkflowTask" should "work" in {
-    val tasks = Seq(
-      WorkflowTask(0, 99, "root", "nop", "{}", createdAt = null, updatedAt = null),
-      WorkflowTask(-1, 99, "terminal", "nop", "{}", createdAt = null, updatedAt = null),
-      WorkflowTask(1, 99, "task1", "nop", "{}", createdAt = null, updatedAt = null),
-    )
-    val links = Seq((0, 1), (1, -1))
-
-    val wf = wfbuilder.buildWorkflowDag(99, "wf1", tasks, links, tags = Tag())
+    val wf = wfBuilder.buildWorkflowDag(99, "wf1", testTasks, testLinks, tags = testTag)
     println(wf.get.printInfo)
     assert(wf.isSuccess)
     assert(wf.get.id == 99)
-    assert(wf.get.tasks == tasks.map(x => (x.id, x)).toMap)
+    assert(wf.get.tasks == testTasks.map(x => (x.id, x)).toMap)
 
     assert(wf.get.getParents(0) == Seq.empty)
     assert(wf.get.getParents(1) == Seq(0))
-    assert(wf.get.getParents(-1) == Seq(1))
+    assert(wf.get.getParents(-1) == Seq(3))
 
-    assert(wf.get.getChildren(0) == Seq(1))
-    assert(wf.get.getChildren(1) == Seq(-1))
+    assert(wf.get.getChildren(0) == Seq(1,2))
+    assert(wf.get.getChildren(1) == Seq(3))
+    assert(wf.get.getChildren(2) == Seq(3))
+    assert(wf.get.getChildren(3) == Seq(-1))
     assert(wf.get.getChildren(-1) == Seq())
   }
-
 
   "loadWorkflow" should "work" in {
     val wfa = WorkflowRunAll(
@@ -61,7 +65,7 @@ class WorkflowDagBuilderTest extends AnyFlatSpec {
     )
     val ret = for {
       savedWf <- wfRepo.saveNewWorkflowRunAll(wfa).run.v.toTry
-      loadWf <- wfbuilder.loadWorkflowDag(savedWf.wf.runId)
+      loadWf <- wfBuilder.loadWorkflowDag(savedWf.wf.runId)
     } yield loadWf
     ret match {
       case Failure(e) => fail(e)
