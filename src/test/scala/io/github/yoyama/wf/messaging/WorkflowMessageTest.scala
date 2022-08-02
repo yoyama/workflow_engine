@@ -15,12 +15,12 @@ class WorkflowMessageTest  extends AnyFlatSpec {
     println(message)
     assert(message.id == 1)
     assert(message.runId == 31)
-    assert(message.mType == 2)
+    assert(message.mType == WorkflowMessageType.REQ_CANCEL)
     assert(message.body == "{ \"aa\": \"bbbb\" }")
   }
 
   "serializer" should "work" in {
-    val message = WorkflowMessage(1, 31, 2, "{ \"aa\": \"bbbb\" }")
+    val message = WorkflowMessage(1, 31, WorkflowMessageType(2), "{ \"aa\": \"bbbb\" }")
     val bytes = ser.serialize("aaa", message)
     val message2 = deser.deserialize("aaa", bytes)
     assert(message == message2)
