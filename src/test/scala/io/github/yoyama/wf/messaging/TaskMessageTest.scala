@@ -16,12 +16,12 @@ class TaskMessageTest  extends AnyFlatSpec {
     assert(message.id == 1)
     assert(message.runId == 31)
     assert(message.taskId == 78)
-    assert(message.mType == 2)
+    assert(message.mType == TaskMessageType.REQ_CANCEL)
     assert(message.body == "{ \"aa\": \"bbbb\" }")
   }
 
   "serializer" should "work" in {
-    val message = TaskMessage(1, 31, 78, 2, "{ \"aa\": \"bbbb\" }")
+    val message = TaskMessage(1, 31, 78, TaskMessageType.REQ_CANCEL, "{ \"aa\": \"bbbb\" }")
     val bytes = ser.serialize("aaa", message)
     val message2 = deser.deserialize("aaa", bytes)
     assert(message == message2)
